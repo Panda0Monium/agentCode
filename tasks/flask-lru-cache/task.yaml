@@ -1,0 +1,38 @@
+name: flask-lru-cache
+instruction: |
+  Implement a Flask HTTP server that exposes an LRU (Least Recently Used) cache.
+
+  Create two files:
+    src/lru_cache.py  — LRUCache class with O(1) get(key) and put(key, value)
+    src/app.py        — Flask application running on port 5000
+
+  The Flask app must expose these endpoints:
+
+    POST /cache                  body: {"capacity": N}
+      (Re)initialize the cache with the given integer capacity.
+      Returns: {"status": "ok"}
+
+    GET  /cache/<key>
+      Return the value for the integer key, or -1 if not present.
+      Returns: {"value": V}
+
+    POST /cache/<key>            body: {"value": V}
+      Insert or update the key with the given integer value.
+      Returns: {"status": "ok"}
+
+    GET  /health
+      Returns: {"status": "ok"}
+
+  Keys and values are integers. When the cache is full, evict the least recently
+  used entry. A GET counts as a use. The cache starts empty; POST /cache resets it.
+  The server must listen on port 5000 and support concurrent users safely.
+  The LRU cache implementation must be thread-safe.
+
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-flask
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

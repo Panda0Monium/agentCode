@@ -1,0 +1,28 @@
+name: lru-cache
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement an LRU (Least Recently Used) cache in `src/lru_cache.py`.
+
+  The `LRUCache` class must support:
+
+    __init__(self, capacity: int)
+        Maximum number of key/value pairs to store. capacity >= 1.
+
+    get(self, key: int) -> int
+        Return the value associated with key, or -1 if the key is not present.
+        Accessing a key counts as a "use" — it becomes the most recently used.
+
+    put(self, key: int, value: int) -> None
+        Insert or update key with value.
+        If inserting would exceed capacity, evict the least recently used key first.
+
+  Both get and put must run in O(1) average time.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1
