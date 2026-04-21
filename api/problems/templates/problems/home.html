@@ -1,0 +1,56 @@
+{% extends "problems/base.html" %}
+
+{% block title_suffix %} — Problems{% endblock %}
+
+{% block content %}
+<h1 class="text-2xl font-semibold mb-6">Problems</h1>
+
+<div class="rounded-lg border border-gray-800 overflow-hidden">
+  <table class="w-full text-sm">
+    <thead>
+      <tr class="bg-gray-900 text-gray-400 text-left">
+        <th class="px-4 py-3 w-12 font-medium">#</th>
+        <th class="px-4 py-3 font-medium">Title</th>
+        <th class="px-4 py-3 font-medium">Difficulty</th>
+        <th class="px-4 py-3 font-medium">Language</th>
+      </tr>
+    </thead>
+    <tbody class="divide-y divide-gray-800">
+      {% for p in problems %}
+      <tr class="hover:bg-gray-800 transition-colors">
+        <td class="px-4 py-3 text-gray-500">{{ p.id }}</td>
+        <td class="px-4 py-3">
+          <div>
+            <a href="/problems/{{ p.id }}/"
+               class="font-medium text-gray-100 hover:text-orange-400 transition-colors">
+              {{ p.display_name }}
+            </a>
+            {% if p.short_description %}
+            <p class="text-gray-500 text-xs mt-0.5">{{ p.short_description }}</p>
+            {% endif %}
+          </div>
+        </td>
+        <td class="px-4 py-3">
+          {% if p.difficulty == "easy" %}
+            <span class="text-green-500 font-medium capitalize">{{ p.difficulty }}</span>
+          {% elif p.difficulty == "medium" %}
+            <span class="text-yellow-500 font-medium capitalize">{{ p.difficulty }}</span>
+          {% elif p.difficulty == "hard" %}
+            <span class="text-red-500 font-medium capitalize">{{ p.difficulty }}</span>
+          {% else %}
+            <span class="text-gray-400 capitalize">{{ p.difficulty }}</span>
+          {% endif %}
+        </td>
+        <td class="px-4 py-3 text-gray-400 capitalize">{{ p.language }}</td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="4" class="px-4 py-8 text-center text-gray-500">No problems found.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+<p class="mt-4 text-xs text-gray-600">{{ problems|length }} problem{{ problems|length|pluralize }} total</p>
+{% endblock %}
