@@ -1,4 +1,4 @@
-# agentCode
+# AgentCode
 
 A **software engineering benchmark and RL environment** where an AI agent edits code in a sandboxed repository, is evaluated by an automated grader, and receives a dense scalar reward.
 
