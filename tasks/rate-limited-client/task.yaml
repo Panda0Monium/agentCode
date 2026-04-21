@@ -1,0 +1,35 @@
+name: rate-limited-client
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-requests
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1
+instruction: |
+  Implement an HTTP API client in `src/api_client.py`.
+
+  The `ApiClient` class must support:
+
+    __init__(self, base_url: str, requests_per_sec: float,
+             max_retries: int = 3, backoff_base: float = 0.5)
+        base_url:         root URL for all requests (no trailing slash)
+        requests_per_sec: token-bucket rate; burst = ceil(requests_per_sec)
+        max_retries:      retries after first attempt (total = max_retries + 1)
+        backoff_base:     initial retry wait in seconds; doubles each retry
+
+    get(self, path: str) -> dict
+        GET {base_url}{path}. Returns parsed JSON body.
+        On HTTP 429 or 5xx: retry with exponential backoff.
+        Raises RuntimeError after all attempts are exhausted.
+
+    post(self, path: str, data: dict) -> dict
+        POST {base_url}{path} with JSON body. Returns parsed JSON body.
+        Same retry behaviour as get.
+
+  Rate limiting: token-bucket algorithm. Bucket capacity = ceil(requests_per_sec).
+  Tokens replenish at requests_per_sec per second. Block until a token is available.
+
+  Backoff formula: wait backoff_base * (2 ** attempt) seconds before retry N
+  (attempt=0 for first retry, 1 for second, etc.).

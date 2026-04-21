@@ -1,0 +1,33 @@
+name: lfu-cache
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement an LFU (Least Frequently Used) cache in `src/lfu_cache.py`.
+
+  The `LFUCache` class must support:
+
+    __init__(self, capacity: int)
+        Maximum number of key/value pairs to store. capacity >= 1.
+
+    get(self, key: int) -> int
+        Return the value associated with key, or -1 if not present.
+        Each call to get counts as one use and increments the key's frequency.
+
+    put(self, key: int, value: int) -> None
+        Insert or update key with value.
+        - If the key already exists, update its value and increment its
+          frequency (same effect as a get).
+        - If inserting a new key would exceed capacity, evict the least
+          frequently used key first.
+        - Tie-break: among keys with equal (minimum) frequency, evict the
+          least recently used one.
+
+  Both get and put must run in O(1) average time.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1
