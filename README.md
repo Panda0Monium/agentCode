@@ -45,18 +45,6 @@ export AGENTCODE_MODEL=...
 python run.py tasks/lru-cache
 ```
 
-Or programmatically:
-
-```python
-from tasks import Task
-from runner import run_episode
-
-task = Task.load("tasks/lru-cache")
-result = run_episode(task, my_agent)
-print(result.grade.summary())
-print(result.reward)  # scalar ∈ [0, 1]
-```
-
 Available tools:
 
 ```python
