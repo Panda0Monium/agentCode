@@ -57,18 +57,6 @@ print(result.grade.summary())
 print(result.reward)  # scalar ∈ [0, 1]
 ```
 
-## Writing an Agent
-
-An agent is any callable `(Session) -> None`:
-
-```python
-def my_agent(session):
-    code = session.read_file("src/lru_cache.py")
-    session.write_file("src/lru_cache.py", improved_code)
-    result = session.run_tests()   # mid-episode feedback
-    session.run_lint()
-```
-
 Available tools:
 
 ```python
