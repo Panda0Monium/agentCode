@@ -55,14 +55,45 @@ session.run_tests(suite="public") -> TestResult   # .score = passed/total
 session.run_lint()                -> LintResult   # .score = 1 - 0.05*errors
 ```
 
+## Outputs
+
+Each episode writes to `output/{task}_{timestamp}/`:
+
+| File / Directory | Contents |
+|---|---|
+| `summary.json` | Task metadata, model, reward, per-suite scores, tool counts, timing |
+| `tests.json` | Pass/fail result for every public and private test case |
+| `trajectory.json` | Full action log — every tool call and LLM invocation in order |
+| `code.zip` | Final state of all files written by the agent |
+| `diffs.zip` | One diff per `write_file` call, in order |
+| `errors/` | One `.txt` per failed test case with the full pytest traceback |
+
+The trajectory records every step the agent took, including the full LLM message history at each turn:
+
+```json
+{
+  "task": "lfu-cache",
+  "timestamp": "2026-03-11T04:21:14",
+  "actions": [
+    {
+      "tool": "llm_invoke",
+      "timestamp": 13.295,
+      "args": { "messages": ["system", "human"] },
+      "result": { "role": "ai", "tool_calls": [{ "name": "write_file", ... }] }
+    },
+    {
+      "tool": "write_file",
+      "timestamp": 13.297,
+      "args": { "path": "src/lfu_cache.py", "diff": "write_0001_src__lfu_cache.py.diff" }
+    },
+    { "tool": "run_tests", ... },
+    { "tool": "run_lint", ... }
+  ]
+}
+```
+
 ## Frontend (Coming Soon)
 
 ![Frontend](docs/Frontend1.png)
 
 ![Leaderboard](docs/Leaderboard1.png)
-
-## Sandbox Isolation
-
-- Docker container per session — network disabled, 512 MB RAM, 0.5 CPU
-- Agent writes go to a temp copy of the repo; the original is never modified
-- Private tests are injected by the grader after the agent finishes — the agent never sees them
