@@ -1,0 +1,17 @@
+name: classeval-currency-converter
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `CurrencyConverter` class in `src/currency_converter.py`.
+  
+  This is a class for currency conversion, which supports to convert amounts between different currencies, retrieve supported currencies, add new currency rates, and update existing currency rates.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

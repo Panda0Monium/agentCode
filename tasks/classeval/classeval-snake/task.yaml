@@ -1,0 +1,17 @@
+name: classeval-snake
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `Snake` class in `src/snake.py`.
+  
+  The class is a snake game, with allows snake to move and eat food, and also enables to reset, and generat a random food position.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

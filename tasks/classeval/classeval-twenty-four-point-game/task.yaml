@@ -1,0 +1,17 @@
+name: classeval-twenty-four-point-game
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `TwentyFourPointGame` class in `src/twenty_four_point_game.py`.
+  
+  This ia a game of twenty-four points, which provides to generate four numbers and check whether player's expression is equal to 24.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

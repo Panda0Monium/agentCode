@@ -1,0 +1,17 @@
+name: classeval-text-file-processor
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `TextFileProcessor` class in `src/text_file_processor.py`.
+  
+  The class handles reading, writing, and processing text files. It can read the file as JSON, read the raw text, write content to the file, and process the file by removing non-alphabetic characters.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

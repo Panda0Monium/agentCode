@@ -1,0 +1,17 @@
+name: classeval-ip-util
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `IpUtil` class in `src/ip_util.py`.
+  
+  This is a class as tool for ip that can be used to obtain the local IP address, validate its validity, and also provides the functionality to retrieve the corresponding hostname.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

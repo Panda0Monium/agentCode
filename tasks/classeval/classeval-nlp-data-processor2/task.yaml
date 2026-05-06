@@ -1,0 +1,17 @@
+name: classeval-nlp-data-processor2
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `NLPDataProcessor2` class in `src/nlp_data_processor2.py`.
+  
+  The class processes NLP data by extracting words from a list of strings, calculating the frequency of each word, and returning the top 5 most frequent words.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

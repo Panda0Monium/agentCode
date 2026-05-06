@@ -1,0 +1,17 @@
+name: classeval-access-gateway-filter
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `AccessGatewayFilter` class in `src/access_gateway_filter.py`.
+  
+  This class is a filter used for accessing gateway filtering, primarily for authentication and access log recording.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

@@ -1,0 +1,17 @@
+name: classeval-calendar-util
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `CalendarUtil` class in `src/calendar_util.py`.
+  
+  This is a class as CalendarUtil that provides functionalities to manage calendar events, schedule appointments, and perform conflict checks.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

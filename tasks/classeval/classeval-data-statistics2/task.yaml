@@ -1,0 +1,17 @@
+name: classeval-data-statistics2
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `DataStatistics2` class in `src/data_statistics2.py`.
+  
+  This is a class for performing data statistics, supporting to get the sum, minimum, maximum, variance, standard deviation, and correlation of a given dataset.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

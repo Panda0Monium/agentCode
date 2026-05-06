@@ -1,0 +1,17 @@
+name: classeval-tic-tac-toe
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `TicTacToe` class in `src/tic_tac_toe.py`.
+  
+  The class represents a game of Tic-Tac-Toe and its functions include making a move on the board, checking for a winner, and determining if the board is full.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

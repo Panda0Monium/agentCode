@@ -3,7 +3,7 @@ Write structured JSON reports for each episode run.
 
 Each run gets its own folder inside output/:
 
-    output/<task>_<timestamp>/
+    output/episodes/<task>_<timestamp>/
         summary.json     ← always written; references siblings
         tests.json       ← test case arrays + lint errors
         trajectory.json  ← tool actions + LLM turns interleaved
@@ -28,7 +28,7 @@ def write_report(task: Task, result: EpisodeResult) -> Path:
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
     ts_display = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-    run_dir = Path("output") / f"{task.name}_{timestamp}"
+    run_dir = Path("output") / "episodes" / f"{task.name}_{timestamp}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
     g = result.grade
@@ -272,3 +272,29 @@ def write_report(task: Task, result: EpisodeResult) -> Path:
     summary_path.write_text(json.dumps(summary_doc, indent=2), encoding="utf-8")
 
     return summary_path
+
+
+def write_bulk_report(rows: list[dict]) -> Path:
+    timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
+    ts_display = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    out_dir = Path("output") / "eval" / timestamp
+    out_dir.mkdir(parents=True, exist_ok=True)
+
+    n = len(rows)
+    doc = {
+        "meta": {
+            "timestamp": ts_display,
+            "n_tasks": n,
+            "avg_reward": round(sum(r["reward"] for r in rows) / n, 4) if n else 0.0,
+            "avg_public_score": round(sum(r["public_score"] for r in rows) / n, 4) if n else 0.0,
+            "avg_private_score": round(sum(r["private_score"] for r in rows) / n, 4) if n else 0.0,
+            "avg_lint_score": round(sum(r["lint_score"] for r in rows) / n, 4) if n else 0.0,
+            "n_timed_out": sum(1 for r in rows if r["timed_out"]),
+            "n_agent_errors": sum(1 for r in rows if r["agent_error"]),
+        },
+        "results": rows,
+    }
+
+    results_path = out_dir / "results.json"
+    results_path.write_text(json.dumps(doc, indent=2), encoding="utf-8")
+    return results_path

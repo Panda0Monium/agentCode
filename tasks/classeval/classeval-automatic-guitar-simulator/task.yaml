@@ -1,0 +1,17 @@
+name: classeval-automatic-guitar-simulator
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `AutomaticGuitarSimulator` class in `src/automatic_guitar_simulator.py`.
+  
+  This class is an automatic guitar simulator that can interpret and play based on the input guitar sheet music.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

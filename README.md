@@ -36,13 +36,26 @@ docker build -t agentcode-sandbox .
 
 ```bash
 # Noop agent (tests infrastructure)
-python run.py tasks/lru-cache --noop
+python run.py tasks/default/lru-cache --noop
 
 # LLM agent
 export AGENTCODE_API_KEY=...
 export AGENTCODE_API_URL=http://localhost:8000/v1
 export AGENTCODE_MODEL=...
-python run.py tasks/lru-cache
+python run.py tasks/default/lru-cache
+```
+
+### Bulk evaluation
+
+```bash
+# Run all tasks in a directory (4 workers by default)
+python run.py tasks/classeval --all
+
+# Control parallelism
+python run.py tasks/classeval --all --workers 8
+
+# Noop pass (infrastructure check, no output written)
+python run.py tasks/classeval --all --noop
 ```
 
 Available tools:
@@ -57,7 +70,9 @@ session.run_lint()                -> LintResult   # .score = 1 - 0.05*errors
 
 ## Outputs
 
-Each episode writes to `output/{task}_{timestamp}/`:
+### Single episode
+
+Each episode writes to `output/episodes/{task}_{timestamp}/`:
 
 | File / Directory | Contents |
 |---|---|
@@ -91,6 +106,47 @@ The trajectory records every step the agent took, including the full LLM message
   ]
 }
 ```
+
+### Bulk evaluation
+
+Bulk runs (`--all`) write a single metrics file instead of per-task reports:
+
+`output/eval/<timestamp>/results.json`
+
+```json
+{
+  "meta": {
+    "timestamp": "2026-05-01T12:34:56",
+    "n_tasks": 100,
+    "avg_reward": 0.4231,
+    "avg_public_score": 0.3812,
+    "avg_private_score": 0.4105,
+    "avg_lint_score": 0.9520,
+    "n_timed_out": 2,
+    "n_agent_errors": 0
+  },
+  "results": [
+    {
+      "task": "classeval-area-calculator",
+      "difficulty": "easy",
+      "reward": 0.85,
+      "public_score": 0.833,
+      "public_passed": 5,
+      "public_total": 6,
+      "private_score": 1.0,
+      "private_passed": 1,
+      "private_total": 1,
+      "lint_score": 1.0,
+      "lint_errors": 0,
+      "elapsed_sec": 47.3,
+      "timed_out": false,
+      "agent_error": null
+    }
+  ]
+}
+```
+
+Noop runs (`--noop`) produce no output in either mode.
 
 ## Frontend (Coming Soon)
 

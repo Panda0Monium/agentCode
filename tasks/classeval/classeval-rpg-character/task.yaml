@@ -1,0 +1,17 @@
+name: classeval-rpg-character
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `RPGCharacter` class in `src/rpg_character.py`.
+  
+  The class represents a role-playing game character, which allows to attack other characters, heal, gain experience, level up, and check if the character is alive.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

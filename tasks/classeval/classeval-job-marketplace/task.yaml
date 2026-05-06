@@ -1,0 +1,17 @@
+name: classeval-job-marketplace
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `JobMarketplace` class in `src/job_marketplace.py`.
+  
+  This is a class that provides functionalities to publish positions, remove positions, submit resumes, withdraw resumes, search for positions, and obtain candidate information.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

@@ -1,0 +1,17 @@
+name: classeval-nlp-data-processor
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `NLPDataProcessor` class in `src/nlp_data_processor.py`.
+  
+  The class processes NLP data by removing stop words from a list of strings using a pre-defined stop word list.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

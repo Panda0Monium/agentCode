@@ -1,0 +1,17 @@
+name: classeval-split-sentence
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `SplitSentence` class in `src/split_sentence.py`.
+  
+  The class allows to split sentences, count words in a sentence, and process a text file to find the maximum word count.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

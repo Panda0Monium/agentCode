@@ -1,0 +1,17 @@
+name: classeval-number-converter
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `NumberConverter` class in `src/number_converter.py`.
+  
+  The class allows to convert  decimal to binary, octal and hexadecimal repectively and contrarily
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

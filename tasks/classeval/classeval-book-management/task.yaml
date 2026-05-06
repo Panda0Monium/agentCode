@@ -1,0 +1,17 @@
+name: classeval-book-management
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `BookManagement` class in `src/book_management.py`.
+  
+  This is a class as managing books system, which supports to add and remove books from the inventory dict, view the inventory, and check the quantity of a specific book.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

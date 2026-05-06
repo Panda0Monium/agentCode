@@ -1,0 +1,17 @@
+name: classeval-assessment-system
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `AssessmentSystem` class in `src/assessment_system.py`.
+  
+  This is a class as an student assessment system, which supports add student, add course score, calculate GPA, and other functions for students and courses.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

@@ -1,0 +1,17 @@
+name: classeval-bank-account
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `BankAccount` class in `src/bank_account.py`.
+  
+  This is a class as a bank account system, which supports deposit money, withdraw money, view balance, and transfer money.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

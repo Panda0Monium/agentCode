@@ -1,0 +1,17 @@
+name: classeval-doc-file-handler
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `DocFileHandler` class in `src/doc_file_handler.py`.
+  
+  This is a class that handles Word documents and provides functionalities for reading, writing, and modifying the content of Word documents.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

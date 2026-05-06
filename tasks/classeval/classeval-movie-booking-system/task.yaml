@@ -1,0 +1,17 @@
+name: classeval-movie-booking-system
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `MovieBookingSystem` class in `src/movie_booking_system.py`.
+  
+  this is a class as movie booking system, which allows to add movies, book tickets and check the available movies within a given time range.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

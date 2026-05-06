@@ -1,0 +1,17 @@
+name: classeval-xml-processor
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `XMLProcessor` class in `src/xml_processor.py`.
+  
+  This is a class as XML files handler, including reading, writing, processing as well as finding elements in a XML file.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1
