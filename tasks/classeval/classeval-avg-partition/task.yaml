@@ -1,0 +1,17 @@
+name: classeval-avg-partition
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `AvgPartition` class in `src/avg_partition.py`.
+  
+  This is a class that partitions the given list into different blocks by specifying the number of partitions, with each block having a uniformly distributed length.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

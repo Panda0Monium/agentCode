@@ -1,0 +1,17 @@
+name: classeval-camel-case-map
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `CamelCaseMap` class in `src/camel_case_map.py`.
+  
+  This is a custom class that allows keys to be in camel case style by converting them from underscore style, which provides dictionary-like functionality.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

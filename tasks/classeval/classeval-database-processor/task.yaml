@@ -1,0 +1,17 @@
+name: classeval-database-processor
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `DatabaseProcessor` class in `src/database_processor.py`.
+  
+  This is a class for processing a database, supporting to create tables, insert data into the database, search for data based on name, and delete data from the database.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

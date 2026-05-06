@@ -1,0 +1,17 @@
+name: classeval-manacher
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `Manacher` class in `src/manacher.py`.
+  
+  his is a class that implements a manacher algorithm to find the Longest palindromic substring in a given string.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

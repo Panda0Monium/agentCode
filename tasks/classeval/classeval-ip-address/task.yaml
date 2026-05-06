@@ -1,0 +1,17 @@
+name: classeval-ip-address
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `IPAddress` class in `src/ip_address.py`.
+  
+  This is a class to process IP Address, including validating, getting the octets and obtaining the binary representation of a valid IP address.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

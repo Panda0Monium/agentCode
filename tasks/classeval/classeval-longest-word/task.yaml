@@ -1,0 +1,17 @@
+name: classeval-longest-word
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `LongestWord` class in `src/longest_word.py`.
+  
+  This is a class allows to add words to a list and find the longest word in a given sentence by comparing the words with the ones in the word list.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

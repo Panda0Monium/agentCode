@@ -1,0 +1,17 @@
+name: classeval-hotel
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `Hotel` class in `src/hotel.py`.
+  
+  This is a class as hotel management system, managing the booking, check-in, check-out, and availability of rooms in a hotel with different room types.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

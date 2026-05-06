@@ -1,0 +1,17 @@
+name: classeval-metrics-calculator
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `MetricsCalculator` class in `src/metrics_calculator.py`.
+  
+  The class calculates precision, recall, F1 score, and accuracy based on predicted and true labels.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

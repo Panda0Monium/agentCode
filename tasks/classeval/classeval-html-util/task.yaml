@@ -1,0 +1,17 @@
+name: classeval-html-util
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `HtmlUtil` class in `src/html_util.py`.
+  
+  This is a class as util for html, supporting for formatting and extracting code from HTML text, including cleaning up the text and converting certain elements into specific marks.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

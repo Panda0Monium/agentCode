@@ -1,0 +1,17 @@
+name: classeval-tri-calculator
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `TriCalculator` class in `src/tri_calculator.py`.
+  
+  The class allows to calculate trigonometric values, including cosine, sine, and tangent, using Taylor series approximations.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

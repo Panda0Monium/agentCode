@@ -1,0 +1,17 @@
+name: classeval-zip-file-processor
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `ZipFileProcessor` class in `src/zip_file_processor.py`.
+  
+  This is a compressed file processing class that provides the ability to read and decompress compressed files
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

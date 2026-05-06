@@ -1,0 +1,17 @@
+name: classeval-user-login-db
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `UserLoginDB` class in `src/user_login_db.py`.
+  
+  This is a database management class for user login verification, providing functions for inserting user information, searching user information, deleting user information, and validating user login.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

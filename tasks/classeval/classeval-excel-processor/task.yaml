@@ -1,0 +1,17 @@
+name: classeval-excel-processor
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `ExcelProcessor` class in `src/excel_processor.py`.
+  
+  This is a class for processing excel files, including readring and writing excel data, as well as processing specific operations and saving as a new excel file.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

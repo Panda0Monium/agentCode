@@ -1,0 +1,17 @@
+name: classeval-order
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `Order` class in `src/order.py`.
+  
+  The class manages restaurant orders by allowing the addition of dishes, calculation of the total cost, and checkout.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

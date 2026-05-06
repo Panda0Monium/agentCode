@@ -1,0 +1,17 @@
+name: classeval-push-box-game
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `PushBoxGame` class in `src/push_box_game.py`.
+  
+  This class implements a functionality of a sokoban game, where the player needs to move boxes to designated targets in order to win.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

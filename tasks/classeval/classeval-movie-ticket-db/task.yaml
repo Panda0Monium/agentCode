@@ -1,0 +1,17 @@
+name: classeval-movie-ticket-db
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `MovieTicketDB` class in `src/movie_ticket_db.py`.
+  
+  This is a class for movie database operations, which allows for inserting movie information, searching for movie information by name, and deleting movie information by name.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

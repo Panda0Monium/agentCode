@@ -1,0 +1,17 @@
+name: classeval-kappa-calculator
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `KappaCalculator` class in `src/kappa_calculator.py`.
+  
+  This is a class as KappaCalculator, supporting to calculate Cohen's and Fleiss' kappa coefficient.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

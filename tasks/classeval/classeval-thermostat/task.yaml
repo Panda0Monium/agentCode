@@ -1,0 +1,17 @@
+name: classeval-thermostat
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `Thermostat` class in `src/thermostat.py`.
+  
+  The class manages temperature control, including setting and retrieving the target temperature, adjusting the mode, and simulating temperature operation.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

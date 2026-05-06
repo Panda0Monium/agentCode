@@ -1,0 +1,17 @@
+name: classeval-arrangement-calculator
+language: python
+difficulty: hard
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `ArrangementCalculator` class in `src/arrangement_calculator.py`.
+  
+  The Arrangement class provides permutation calculations and selection operations for a given set of data elements.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

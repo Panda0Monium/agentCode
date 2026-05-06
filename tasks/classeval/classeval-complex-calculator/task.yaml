@@ -1,0 +1,17 @@
+name: classeval-complex-calculator
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `ComplexCalculator` class in `src/complex_calculator.py`.
+  
+  This is a class that implements addition, subtraction, multiplication, and division operations for complex numbers.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

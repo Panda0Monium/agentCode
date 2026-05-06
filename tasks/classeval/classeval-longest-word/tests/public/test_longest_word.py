@@ -1,0 +1,41 @@
+import unittest
+import re
+import string
+from longest_word import LongestWord
+
+
+class LongestWordTestAddWord(unittest.TestCase):
+    def test_add_word_1(self):
+        longestWord = LongestWord()
+        longestWord.add_word("hello")
+        self.assertEqual(['hello'], longestWord.word_list)
+
+    def test_add_word_2(self):
+        longestWord = LongestWord()
+        longestWord.add_word("hello")
+        longestWord.add_word("world")
+        self.assertEqual(['hello', 'world'], longestWord.word_list)
+
+    def test_add_word_3(self):
+        longestWord = LongestWord()
+        longestWord.add_word("hello")
+        longestWord.add_word("world")
+        longestWord.add_word("!")
+        self.assertEqual(['hello', 'world', '!'], longestWord.word_list)
+
+    def test_add_word_4(self):
+        longestWord = LongestWord()
+        longestWord.add_word("hello")
+        longestWord.add_word("world")
+        longestWord.add_word("!")
+        longestWord.add_word("!")
+        self.assertEqual(['hello', 'world', '!', '!'], longestWord.word_list)
+
+    def test_add_word_5(self):
+        longestWord = LongestWord()
+        longestWord.add_word("hello")
+        longestWord.add_word("world")
+        longestWord.add_word("!")
+        longestWord.add_word("!")
+        longestWord.add_word("!")
+        self.assertEqual(['hello', 'world', '!', '!', '!'], longestWord.word_list)

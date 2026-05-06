@@ -1,0 +1,17 @@
+name: classeval-metrics-calculator2
+language: python
+difficulty: easy
+timeout_sec: 300
+docker_image: agentcode-classeval
+
+instruction: |
+  Implement the `MetricsCalculator2` class in `src/metrics_calculator2.py`.
+  
+  The class provides to calculate Mean Reciprocal Rank (MRR) and Mean Average Precision (MAP) based on input data, where MRR measures the ranking quality and MAP measures the average precision.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

@@ -1,0 +1,17 @@
+name: classeval-data-statistics
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `DataStatistics` class in `src/data_statistics.py`.
+  
+  This is a class for performing data statistics, supporting to calculate the mean, median, and mode of a given data set.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1

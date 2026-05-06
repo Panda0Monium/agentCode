@@ -1,0 +1,17 @@
+name: classeval-area-calculator
+language: python
+difficulty: medium
+timeout_sec: 300
+docker_image: agentcode-base
+
+instruction: |
+  Implement the `AreaCalculator` class in `src/area_calculator.py`.
+  
+  This is a class for calculating the area of different shapes, including circle, sphere, cylinder, sector and annulus.
+  
+  The class skeleton with all method signatures and docstrings is already in place.
+
+grader_weights:
+  public: 0.3
+  private: 0.6
+  lint: 0.1
