@@ -1,8 +1,12 @@
+import json
+
+from django.http import Http404
+from django.utils.safestring import mark_safe
 from django.views.generic import TemplateView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
-from .services import get_all_problems, get_problem_by_id
+from .services import get_all_problems, get_problem_by_id, get_problems_grouped
 from .serializers import ProblemSummarySerializer, ProblemDetailSerializer
 
 
@@ -11,7 +15,22 @@ class HomeView(TemplateView):
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx["problems"] = get_all_problems()
+        grouped = get_problems_grouped()
+        ctx["grouped"] = grouped
+        ctx["grouped_json"] = mark_safe(json.dumps(grouped))
+        return ctx
+
+
+class ProblemDetailTemplateView(TemplateView):
+    template_name = "problems/detail.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        problem = get_problem_by_id(self.kwargs["pk"])
+        if not problem:
+            raise Http404("Problem not found")
+        ctx["problem"] = problem
+        ctx["instruction_json"] = mark_safe(json.dumps(problem["instruction"]))
         return ctx
 
 

@@ -1,56 +1,216 @@
 {% extends "problems/base.html" %}
-
-{% block title_suffix %} — Problems{% endblock %}
+{% block title_suffix %} — Problem Catalogue{% endblock %}
 
 {% block content %}
-<h1 class="text-2xl font-semibold mb-6">Problems</h1>
-
-<div class="rounded-lg border border-gray-800 overflow-hidden">
-  <table class="w-full text-sm">
-    <thead>
-      <tr class="bg-gray-900 text-gray-400 text-left">
-        <th class="px-4 py-3 w-12 font-medium">#</th>
-        <th class="px-4 py-3 font-medium">Title</th>
-        <th class="px-4 py-3 font-medium">Difficulty</th>
-        <th class="px-4 py-3 font-medium">Language</th>
-      </tr>
-    </thead>
-    <tbody class="divide-y divide-gray-800">
-      {% for p in problems %}
-      <tr class="hover:bg-gray-800 transition-colors">
-        <td class="px-4 py-3 text-gray-500">{{ p.id }}</td>
-        <td class="px-4 py-3">
-          <div>
-            <a href="/problems/{{ p.id }}/"
-               class="font-medium text-gray-100 hover:text-orange-400 transition-colors">
-              {{ p.display_name }}
-            </a>
-            {% if p.short_description %}
-            <p class="text-gray-500 text-xs mt-0.5">{{ p.short_description }}</p>
-            {% endif %}
-          </div>
-        </td>
-        <td class="px-4 py-3">
-          {% if p.difficulty == "easy" %}
-            <span class="text-green-500 font-medium capitalize">{{ p.difficulty }}</span>
-          {% elif p.difficulty == "medium" %}
-            <span class="text-yellow-500 font-medium capitalize">{{ p.difficulty }}</span>
-          {% elif p.difficulty == "hard" %}
-            <span class="text-red-500 font-medium capitalize">{{ p.difficulty }}</span>
-          {% else %}
-            <span class="text-gray-400 capitalize">{{ p.difficulty }}</span>
-          {% endif %}
-        </td>
-        <td class="px-4 py-3 text-gray-400 capitalize">{{ p.language }}</td>
-      </tr>
-      {% empty %}
-      <tr>
-        <td colspan="4" class="px-4 py-8 text-center text-gray-500">No problems found.</td>
-      </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+<div class="mb-6">
+  <h1 class="text-2xl font-bold text-gray-900 dark:text-white">Problem Catalogue</h1>
 </div>
 
-<p class="mt-4 text-xs text-gray-600">{{ problems|length }} problem{{ problems|length|pluralize }} total</p>
+<!-- Filter bar -->
+<div class="flex flex-wrap gap-3 mb-6">
+  <input id="search-input" type="text" placeholder="Search problems..."
+         class="flex-1 min-w-48 px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500
+                dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 dark:placeholder-gray-500" />
+
+  <select id="dataset-filter"
+          class="px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-700
+                 focus:outline-none focus:ring-2 focus:ring-blue-500
+                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+    <option value="">All Datasets</option>
+    <option value="default">Default</option>
+    <option value="classeval">ClassEval</option>
+  </select>
+
+  <select id="difficulty-filter"
+          class="px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white text-gray-700
+                 focus:outline-none focus:ring-2 focus:ring-blue-500
+                 dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
+    <option value="">All Difficulties</option>
+    <option value="easy">Easy</option>
+    <option value="medium">Medium</option>
+    <option value="hard">Hard</option>
+  </select>
+</div>
+
+<!-- Sections rendered by JS -->
+<div id="catalogue-root"></div>
+
+<!-- No results message -->
+<p id="no-results" class="hidden text-center py-12 text-gray-500 dark:text-gray-400">
+  No problems match your search.
+</p>
+
+<!-- Embedded data -->
+<script id="grouped-data" type="application/json">{{ grouped_json }}</script>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+(function () {
+  const GROUPED = JSON.parse(document.getElementById('grouped-data').textContent);
+  const PAGE_SIZE = 10;
+
+  // Per-section state
+  const state = {};
+  Object.keys(GROUPED).forEach(function (ds) {
+    state[ds] = { page: 1, filtered: GROUPED[ds].slice() };
+  });
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function difficultyBadge(diff) {
+    var colors = {
+      easy:    'bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300',
+      medium:  'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
+      hard:    'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
+    };
+    var cls = colors[diff] || 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400';
+    return '<span class="px-2 py-0.5 rounded-full text-xs font-medium capitalize ' + cls + '">' +
+           escapeHtml(diff) + '</span>';
+  }
+
+  function sectionLabel(ds) {
+    return ds === 'default' ? 'Default' : ds === 'classeval' ? 'ClassEval' : ds;
+  }
+
+  function renderSection(ds) {
+    var s = state[ds];
+    var total = s.filtered.length;
+    var pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+    if (s.page > pages) s.page = pages;
+    var start = (s.page - 1) * PAGE_SIZE;
+    var slice = s.filtered.slice(start, start + PAGE_SIZE);
+
+    var rows = slice.map(function (p, i) {
+      return '<tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">' +
+        '<td class="px-4 py-3 text-gray-400 dark:text-gray-500 text-sm">' + (start + i + 1) + '</td>' +
+        '<td class="px-4 py-3">' +
+          '<a href="/problems/' + p.id + '/" class="font-medium text-blue-600 hover:underline dark:text-blue-400">' +
+            escapeHtml(p.display_name) +
+          '</a>' +
+          (p.short_description
+            ? '<p class="text-xs text-gray-500 dark:text-gray-400 mt-0.5 truncate max-w-md">' +
+              escapeHtml(p.short_description) + '</p>'
+            : '') +
+        '</td>' +
+        '<td class="px-4 py-3">' + difficultyBadge(p.difficulty) + '</td>' +
+        '<td class="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 capitalize">' + escapeHtml(p.language) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    if (!rows) {
+      rows = '<tr><td colspan="4" class="px-4 py-8 text-center text-gray-400 dark:text-gray-500">No problems in this section match.</td></tr>';
+    }
+
+    var pagination = renderPagination(ds, s.page, pages, total);
+
+    return '<div id="section-' + ds + '" class="mb-10">' +
+      '<div class="flex items-center gap-3 mb-3">' +
+        '<h2 class="text-lg font-semibold text-gray-800 dark:text-gray-200">' + sectionLabel(ds) + '</h2>' +
+        '<span class="text-xs text-gray-400 dark:text-gray-500">' + total + ' problem' + (total !== 1 ? 's' : '') + '</span>' +
+      '</div>' +
+      '<div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900">' +
+        '<table class="w-full text-sm">' +
+          '<thead>' +
+            '<tr class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 text-left">' +
+              '<th class="px-4 py-3 font-medium w-12">#</th>' +
+              '<th class="px-4 py-3 font-medium">Problem</th>' +
+              '<th class="px-4 py-3 font-medium">Difficulty</th>' +
+              '<th class="px-4 py-3 font-medium">Language</th>' +
+            '</tr>' +
+          '</thead>' +
+          '<tbody class="divide-y divide-gray-100 dark:divide-gray-800">' + rows + '</tbody>' +
+        '</table>' +
+      '</div>' +
+      pagination +
+    '</div>';
+  }
+
+  function renderPagination(ds, current, total, itemCount) {
+    if (total <= 1) return '';
+
+    function btn(label, page, active, disabled) {
+      if (disabled) {
+        return '<button disabled class="px-3 py-1.5 text-sm rounded-lg text-gray-300 dark:text-gray-600 cursor-not-allowed">' + label + '</button>';
+      }
+      if (active) {
+        return '<button class="px-3 py-1.5 text-sm rounded-lg bg-blue-600 text-white font-medium">' + label + '</button>';
+      }
+      return '<button onclick="goPage(\'' + ds + '\',' + page + ')" ' +
+             'class="px-3 py-1.5 text-sm rounded-lg text-gray-600 dark:text-gray-400 ' +
+             'hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">' + label + '</button>';
+    }
+
+    var html = '<div class="flex items-center justify-center gap-1 mt-3">';
+    html += btn('‹', current - 1, false, current === 1);
+
+    var start = Math.max(1, current - 2);
+    var end   = Math.min(total, start + 4);
+    start = Math.max(1, end - 4);
+
+    for (var p = start; p <= end; p++) {
+      html += btn(p, p, p === current, false);
+    }
+
+    html += btn('›', current + 1, false, current === total);
+    html += '</div>';
+    return html;
+  }
+
+  window.goPage = function (ds, page) {
+    state[ds].page = page;
+    renderAll();
+  };
+
+  function applyFilters() {
+    var query = document.getElementById('search-input').value.trim().toLowerCase();
+    var diffFilter = document.getElementById('difficulty-filter').value;
+    var dsFilter   = document.getElementById('dataset-filter').value;
+
+    Object.keys(GROUPED).forEach(function (ds) {
+      state[ds].page = 1;
+      state[ds].filtered = GROUPED[ds].filter(function (p) {
+        var matchSearch = !query ||
+          p.display_name.toLowerCase().includes(query) ||
+          (p.short_description && p.short_description.toLowerCase().includes(query));
+        var matchDiff = !diffFilter || p.difficulty === diffFilter;
+        var matchDs   = !dsFilter   || p.dataset === dsFilter;
+        return matchSearch && matchDiff && matchDs;
+      });
+    });
+
+    renderAll();
+  }
+
+  function renderAll() {
+    var root = document.getElementById('catalogue-root');
+    var noResults = document.getElementById('no-results');
+    var anyVisible = false;
+    var html = '';
+
+    Object.keys(GROUPED).forEach(function (ds) {
+      if (state[ds].filtered.length > 0) {
+        html += renderSection(ds);
+        anyVisible = true;
+      }
+    });
+
+    root.innerHTML = html;
+    noResults.classList.toggle('hidden', anyVisible);
+  }
+
+  document.getElementById('search-input').addEventListener('input', applyFilters);
+  document.getElementById('difficulty-filter').addEventListener('change', applyFilters);
+  document.getElementById('dataset-filter').addEventListener('change', applyFilters);
+
+  applyFilters();
+})();
+</script>
 {% endblock %}

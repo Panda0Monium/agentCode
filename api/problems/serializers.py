@@ -8,6 +8,7 @@ class ProblemSummarySerializer(serializers.Serializer):
     difficulty = serializers.CharField()
     language = serializers.CharField()
     short_description = serializers.CharField()
+    dataset = serializers.CharField()
 
 
 class ProblemDetailSerializer(ProblemSummarySerializer):
