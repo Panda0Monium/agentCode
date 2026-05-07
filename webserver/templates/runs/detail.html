@@ -1,0 +1,321 @@
+{% extends "problems/base.html" %}
+{% load run_extras %}
+{% block title_suffix %} — Run #{{ run.pk }}{% endblock %}
+
+{% block content %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
+
+<a href="{% url 'run_history' %}" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6">
+  &#8592; My Runs
+</a>
+
+<!-- Header -->
+<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 mb-5">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div>
+      <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">{{ run.task_name }}</h1>
+      <p class="text-sm text-gray-500 dark:text-gray-400">{{ run.created_at|date:"M d, Y H:i" }}</p>
+    </div>
+    {% if run.status == 'done' %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Done</span>
+    {% elif run.status == 'running' %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Running</span>
+    {% elif run.status == 'failed' %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Failed</span>
+    {% else %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Pending</span>
+    {% endif %}
+  </div>
+
+  {% if run.status == 'done' %}
+  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Reward</p>
+      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.reward|floatformat:3 }}</p>
+    </div>
+    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Public</p>
+      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.public_score|floatformat:2 }}</p>
+    </div>
+    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Private</p>
+      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.private_score|floatformat:2 }}</p>
+    </div>
+    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Lint</p>
+      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.lint_score|floatformat:2 }}</p>
+    </div>
+  </div>
+  {% endif %}
+
+  {% if run.status == 'failed' and run.error %}
+  <div class="mt-4">
+    <p class="text-sm font-medium text-red-500 mb-2">Error</p>
+    <pre class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded p-3 overflow-x-auto whitespace-pre-wrap">{{ run.error }}</pre>
+  </div>
+  {% endif %}
+</div>
+
+{% if run.trajectory %}
+<!-- Tabs -->
+<div class="mb-4 border-b border-gray-200 dark:border-gray-800">
+  <nav class="flex gap-1 -mb-px">
+    {% for tab in "Overview,Code Changes,Test Results,Agent Log"|split:"," %}
+    {% endfor %}
+    <button onclick="switchTab('overview')" id="tab-overview"
+            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Overview</button>
+    <button onclick="switchTab('code')" id="tab-code"
+            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Code Changes</button>
+    <button onclick="switchTab('tests')" id="tab-tests"
+            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Test Results</button>
+    <button onclick="switchTab('log')" id="tab-log"
+            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Agent Log</button>
+  </nav>
+</div>
+
+<div id="pane-overview" class="tab-pane"></div>
+<div id="pane-code"     class="tab-pane hidden"></div>
+<div id="pane-tests"   class="tab-pane hidden"></div>
+<div id="pane-log"     class="tab-pane hidden"></div>
+
+{% else %}
+<p class="text-sm text-gray-400 dark:text-gray-500">No trajectory data for this run.</p>
+{% endif %}
+
+<script id="trajectory-data" type="application/json">{{ run.trajectory|default:"null"|safe_json }}</script>
+{% endblock %}
+
+{% block extra_scripts %}
+{% if run.trajectory %}
+<script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
+<script>
+(function () {
+  // ── helpers ──────────────────────────────────────────────────────────
+  function esc(s) {
+    return String(s || '')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function fmt(ts) { return ts.toFixed(1) + 's'; }
+  function pct(v)  { return v === null || v === undefined ? '—' : (v * 100).toFixed(0) + '%'; }
+
+  var DATA = JSON.parse(document.getElementById('trajectory-data').textContent) || {steps:[]};
+  var STEPS = DATA.steps || [];
+
+  // ── tab switching ─────────────────────────────────────────────────────
+  var TABS = ['overview','code','tests','log'];
+  window.switchTab = function(name) {
+    TABS.forEach(function(t) {
+      document.getElementById('pane-' + t).classList.toggle('hidden', t !== name);
+      var btn = document.getElementById('tab-' + t);
+      if (t === name) {
+        btn.classList.add('border-blue-600','text-blue-600');
+        btn.classList.remove('border-transparent','text-gray-500','dark:text-gray-400');
+      } else {
+        btn.classList.remove('border-blue-600','text-blue-600');
+        btn.classList.add('border-transparent','text-gray-500','dark:text-gray-400');
+      }
+    });
+  };
+
+  // ── tool icons ────────────────────────────────────────────────────────
+  var ICONS = {
+    llm_invoke:  '🤖',
+    write_file:  '✏️',
+    read_file:   '📖',
+    run_tests:   '🧪',
+    run_lint:    '🔍',
+    list_files:  '📁',
+  };
+
+  function stepSummary(s) {
+    if (s.tool === 'llm_invoke') {
+      var n = (s.tool_calls || []).length;
+      return n ? 'Called ' + n + ' tool' + (n > 1 ? 's' : '') : 'Finished (no tool calls)';
+    }
+    if (s.tool === 'write_file')  return 'Wrote ' + esc(s.path);
+    if (s.tool === 'read_file')   return 'Read ' + esc(s.path);
+    if (s.tool === 'list_files')  return 'Listed files';
+    if (s.tool === 'run_tests')   return 'Tests: ' + s.passed + '/' + s.total + ' passed';
+    if (s.tool === 'run_lint')    return 'Lint: ' + (s.errors && s.errors.length ? s.errors.length + ' error(s)' : 'clean');
+    return s.tool;
+  }
+
+  // ── OVERVIEW ──────────────────────────────────────────────────────────
+  function buildOverview() {
+    var rows = STEPS.map(function(s, i) {
+      return '<tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">' +
+        '<td class="px-4 py-2.5 text-gray-400 text-xs">' + fmt(s.timestamp) + '</td>' +
+        '<td class="px-4 py-2.5 text-sm">' + (ICONS[s.tool] || '') + '</td>' +
+        '<td class="px-4 py-2.5 text-xs font-mono text-gray-500 dark:text-gray-400">' + esc(s.tool) + '</td>' +
+        '<td class="px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300">' + stepSummary(s) + '</td>' +
+      '</tr>';
+    }).join('');
+
+    document.getElementById('pane-overview').innerHTML =
+      '<div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900">' +
+      '<table class="w-full text-sm">' +
+      '<thead><tr class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 text-left">' +
+      '<th class="px-4 py-3 font-medium w-16">Time</th>' +
+      '<th class="px-4 py-3 w-8"></th>' +
+      '<th class="px-4 py-3 font-medium w-32">Tool</th>' +
+      '<th class="px-4 py-3 font-medium">Summary</th>' +
+      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  }
+
+  // ── CODE CHANGES ──────────────────────────────────────────────────────
+  function buildCode() {
+    var writes = STEPS.filter(function(s) { return s.tool === 'write_file' && s.diff; });
+    if (!writes.length) {
+      document.getElementById('pane-code').innerHTML =
+        '<p class="text-sm text-gray-400 dark:text-gray-500">No file writes recorded.</p>';
+      return;
+    }
+
+    var html = '';
+    writes.forEach(function(s, i) {
+      var divId = 'diff-' + i;
+      html += '<div class="mb-6">' +
+        '<p class="text-sm font-mono font-medium text-gray-700 dark:text-gray-300 mb-2">' + esc(s.path) +
+        ' <span class="text-xs text-gray-400">' + fmt(s.timestamp) + '</span></p>' +
+        '<div id="' + divId + '"></div>' +
+        '</div>';
+    });
+    document.getElementById('pane-code').innerHTML = html;
+
+    writes.forEach(function(s, i) {
+      var el = document.getElementById('diff-' + i);
+      var ui = new Diff2HtmlUI(el, s.diff, {
+        drawFileList: false,
+        matching: 'lines',
+        outputFormat: 'line-by-line',
+        highlight: true,
+      });
+      ui.draw();
+    });
+  }
+
+  // ── TEST RESULTS ──────────────────────────────────────────────────────
+  function buildTests() {
+    var runs = STEPS.filter(function(s) { return s.tool === 'run_tests'; });
+    if (!runs.length) {
+      document.getElementById('pane-tests').innerHTML =
+        '<p class="text-sm text-gray-400 dark:text-gray-500">No test runs recorded.</p>';
+      return;
+    }
+
+    var html = runs.map(function(s, i) {
+      var passRate = s.total ? Math.round((s.passed / s.total) * 100) : 0;
+      var barColor = passRate === 100 ? 'bg-green-500' : passRate > 50 ? 'bg-yellow-500' : 'bg-red-500';
+
+      var cases = (s.cases || []).map(function(c) {
+        var icon = c.passed ? '✅' : '❌';
+        var row = '<tr class="border-b border-gray-100 dark:border-gray-800">' +
+          '<td class="px-3 py-2 text-xs">' + icon + '</td>' +
+          '<td class="px-3 py-2 text-xs font-mono text-gray-700 dark:text-gray-300">' + esc(c.name) + '</td>' +
+          '</tr>';
+        if (!c.passed && c.error) {
+          row += '<tr class="border-b border-gray-100 dark:border-gray-800 bg-red-50 dark:bg-red-900/10">' +
+            '<td></td><td class="px-3 py-2"><pre class="text-xs text-red-500 whitespace-pre-wrap">' + esc(c.error) + '</pre></td>' +
+            '</tr>';
+        }
+        return row;
+      }).join('');
+
+      return '<div class="mb-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">' +
+        '<div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">' +
+        '<span class="text-sm font-medium text-gray-800 dark:text-gray-200">Run ' + (i + 1) +
+        ' <span class="text-xs text-gray-400 font-normal ml-1">' + fmt(s.timestamp) + '</span></span>' +
+        '<span class="text-sm font-medium ' + (passRate === 100 ? 'text-green-600' : 'text-gray-600 dark:text-gray-400') + '">' +
+        s.passed + '/' + s.total + ' passed</span>' +
+        '</div>' +
+        '<div class="h-1.5 bg-gray-100 dark:bg-gray-800"><div class="h-full ' + barColor + '" style="width:' + passRate + '%"></div></div>' +
+        '<table class="w-full"><tbody>' + cases + '</tbody></table>' +
+        '</div>';
+    }).join('');
+
+    document.getElementById('pane-tests').innerHTML = html;
+  }
+
+  // ── AGENT LOG ────────────────────────────────────────────────────────
+  function buildLog() {
+    var items = STEPS.map(function(s, i) {
+      var isLlm = s.tool === 'llm_invoke';
+      var summary = stepSummary(s);
+      var detailId = 'log-detail-' + i;
+
+      var detail = '';
+      if (s.tool === 'llm_invoke') {
+        var tcHtml = (s.tool_calls || []).map(function(tc) {
+          return '<div class="mb-1"><span class="font-mono text-xs text-blue-600 dark:text-blue-400">' +
+            esc(tc.name) + '</span>' +
+            '<pre class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">' + esc(JSON.stringify(tc.args, null, 2)) + '</pre></div>';
+        }).join('');
+        var textHtml = s.text ? '<p class="text-xs text-gray-600 dark:text-gray-400 mt-2 whitespace-pre-wrap">' + esc(s.text) + '</p>' : '';
+        detail = tcHtml + textHtml;
+      } else if (s.tool === 'write_file' && s.diff) {
+        detail = '<div id="log-diff-' + i + '"></div>';
+      } else if (s.tool === 'run_tests') {
+        detail = (s.cases || []).map(function(c) {
+          return '<div class="text-xs py-0.5">' + (c.passed ? '✅' : '❌') + ' <span class="font-mono">' + esc(c.name) + '</span>' +
+            (c.error ? '<pre class="text-red-500 mt-0.5 whitespace-pre-wrap">' + esc(c.error) + '</pre>' : '') + '</div>';
+        }).join('');
+      } else if (s.tool === 'run_lint') {
+        detail = (s.errors && s.errors.length)
+          ? s.errors.map(function(e) {
+              return '<div class="text-xs font-mono text-red-500">' + esc(e.path) + ':' + e.line + ' ' + esc(e.code) + ' ' + esc(e.message) + '</div>';
+            }).join('')
+          : '<span class="text-xs text-green-600">Clean</span>';
+      }
+
+      var hasDetail = !!detail;
+      return '<div class="border-b border-gray-100 dark:border-gray-800 last:border-0">' +
+        '<button onclick="toggleLog(' + i + ')" ' +
+        'class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/40 ' +
+        (hasDetail ? 'cursor-pointer' : 'cursor-default') + '">' +
+        '<span class="text-gray-400 text-xs w-10 shrink-0">' + fmt(s.timestamp) + '</span>' +
+        '<span class="text-sm">' + (ICONS[s.tool] || '') + '</span>' +
+        '<span class="text-xs font-mono text-gray-500 dark:text-gray-400 w-24 shrink-0">' + esc(s.tool) + '</span>' +
+        '<span class="text-sm text-gray-700 dark:text-gray-300 flex-1">' + summary + '</span>' +
+        (hasDetail ? '<span id="log-arrow-' + i + '" class="text-gray-400 text-xs ml-2">▶</span>' : '') +
+        '</button>' +
+        (hasDetail ? '<div id="' + detailId + '" class="hidden px-4 pb-3 pt-1 bg-gray-50 dark:bg-gray-800/40">' + detail + '</div>' : '') +
+        '</div>';
+    }).join('');
+
+    document.getElementById('pane-log').innerHTML =
+      '<div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900">' +
+      items + '</div>';
+
+    // Render any diffs in the log
+    STEPS.forEach(function(s, i) {
+      if (s.tool === 'write_file' && s.diff) {
+        var el = document.getElementById('log-diff-' + i);
+        if (el) {
+          var ui = new Diff2HtmlUI(el, s.diff, {
+            drawFileList: false, outputFormat: 'line-by-line', highlight: true,
+          });
+          ui.draw();
+        }
+      }
+    });
+  }
+
+  window.toggleLog = function(i) {
+    var detail = document.getElementById('log-detail-' + i);
+    var arrow  = document.getElementById('log-arrow-' + i);
+    if (!detail) return;
+    var hidden = detail.classList.toggle('hidden');
+    if (arrow) arrow.textContent = hidden ? '▶' : '▼';
+  };
+
+  // ── init ──────────────────────────────────────────────────────────────
+  buildOverview();
+  buildCode();
+  buildTests();
+  buildLog();
+  switchTab('overview');
+})();
+</script>
+{% endif %}
+{% endblock %}

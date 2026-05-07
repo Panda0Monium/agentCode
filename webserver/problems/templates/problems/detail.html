@@ -1,0 +1,238 @@
+{% extends "problems/base.html" %}
+{% block title_suffix %} — {{ problem.display_name }}{% endblock %}
+
+{% block content %}
+<a href="/" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400
+                   hover:underline mb-6">
+  &#8592; Problem Catalogue
+</a>
+
+<!-- Header card -->
+<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800
+            rounded-xl p-6 mb-5">
+  <div class="flex flex-wrap items-start justify-between gap-4">
+    <div class="flex-1 min-w-0">
+      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
+        {{ problem.display_name }}
+      </h1>
+      <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
+        <span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">Dataset</span>
+          &nbsp;{{ problem.dataset|title }}
+        </span>
+        <span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">Language</span>
+          &nbsp;<span class="capitalize">{{ problem.language }}</span>
+        </span>
+        <span>
+          <span class="font-medium text-gray-700 dark:text-gray-300">Timeout</span>
+          &nbsp;{{ problem.timeout_sec }}s
+        </span>
+      </div>
+    </div>
+
+    <!-- Difficulty badge -->
+    {% if problem.difficulty == "easy" %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium
+                   bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Easy</span>
+    {% elif problem.difficulty == "medium" %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium
+                   bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">Medium</span>
+    {% elif problem.difficulty == "hard" %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium
+                   bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Hard</span>
+    {% else %}
+      <span class="px-3 py-1 rounded-full text-sm font-medium
+                   bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+        {{ problem.difficulty|capfirst }}
+      </span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- Instruction card -->
+<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 mb-5">
+  <h2 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-4">Problem Statement</h2>
+  <div id="instruction-markdown" class="instruction-body text-sm text-gray-700 dark:text-gray-300 leading-relaxed"></div>
+</div>
+
+<!-- Run card -->
+<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+  {% if not user.is_authenticated %}
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      <a href="{% url 'account_login' %}" class="text-blue-600 hover:underline dark:text-blue-400">Sign in</a>
+      to run this problem against your model.
+    </p>
+  {% elif not user.model_api_url or not user.model_name or not user.model_api_key %}
+    <p class="text-sm text-gray-500 dark:text-gray-400">
+      <a href="{% url 'model_config' %}" class="text-blue-600 hover:underline dark:text-blue-400">Configure your model</a>
+      before running.
+    </p>
+  {% else %}
+    <div class="flex items-center justify-between mb-4">
+      <h2 class="text-base font-semibold text-gray-800 dark:text-gray-200">Run</h2>
+      <button id="run-btn"
+              class="px-4 py-1.5 rounded-md bg-blue-600 text-white text-sm font-medium
+                     hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+        Run
+      </button>
+    </div>
+
+    <div id="run-status" class="hidden">
+      <div id="status-pending" class="hidden text-sm text-gray-500 dark:text-gray-400">Queued…</div>
+      <div id="status-running" class="hidden text-sm text-blue-600 dark:text-blue-400">Running…</div>
+      <div id="status-done" class="hidden">
+        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Reward</p>
+            <p id="val-reward" class="text-lg font-bold text-gray-900 dark:text-white"></p>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Public</p>
+            <p id="val-public" class="text-lg font-bold text-gray-900 dark:text-white"></p>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Private</p>
+            <p id="val-private" class="text-lg font-bold text-gray-900 dark:text-white"></p>
+          </div>
+          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
+            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Lint</p>
+            <p id="val-lint" class="text-lg font-bold text-gray-900 dark:text-white"></p>
+          </div>
+        </div>
+      </div>
+      <div id="status-failed" class="hidden">
+        <p class="text-sm text-red-500 font-medium mb-2">Run failed</p>
+        <pre id="val-error" class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded p-3 overflow-x-auto whitespace-pre-wrap"></pre>
+      </div>
+    </div>
+
+    <form id="run-form" class="hidden">
+      {% csrf_token %}
+    </form>
+  {% endif %}
+</div>
+
+<script id="instruction-raw" type="application/json">{{ instruction_json }}</script>
+<script id="problem-meta" type="application/json">{{ problem_meta_json }}</script>
+
+<style>
+  .instruction-body h1, .instruction-body h2, .instruction-body h3 {
+    font-weight: 600;
+    margin-top: 1.25rem;
+    margin-bottom: 0.5rem;
+    color: inherit;
+  }
+  .instruction-body h1 { font-size: 1.25rem; }
+  .instruction-body h2 { font-size: 1.1rem; }
+  .instruction-body h3 { font-size: 1rem; }
+  .instruction-body p  { margin-bottom: 0.75rem; }
+  .instruction-body ul, .instruction-body ol {
+    margin: 0.5rem 0 0.75rem 1.25rem;
+    line-height: 1.7;
+  }
+  .instruction-body ul { list-style: disc; }
+  .instruction-body ol { list-style: decimal; }
+  .instruction-body code {
+    background: #f3f4f6;
+    border-radius: 0.25rem;
+    padding: 0.1em 0.35em;
+    font-size: 0.85em;
+    font-family: ui-monospace, monospace;
+  }
+  .instruction-body pre {
+    background: #f3f4f6;
+    border-radius: 0.375rem;
+    padding: 1rem;
+    overflow-x: auto;
+    margin: 0.75rem 0;
+    font-size: 0.85rem;
+    font-family: ui-monospace, monospace;
+    line-height: 1.6;
+  }
+  .instruction-body pre code {
+    background: none;
+    padding: 0;
+  }
+  .dark .instruction-body code { background: #1f2937; }
+  .dark .instruction-body pre  { background: #1f2937; }
+</style>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+  var raw = JSON.parse(document.getElementById('instruction-raw').textContent);
+  document.getElementById('instruction-markdown').innerHTML = marked.parse(raw);
+</script>
+
+{% if user.is_authenticated and user.model_api_url and user.model_name and user.model_api_key %}
+<script>
+(function () {
+  var meta    = JSON.parse(document.getElementById('problem-meta').textContent);
+  var btn     = document.getElementById('run-btn');
+  var statusEl = document.getElementById('run-status');
+  var pollTimer = null;
+
+  function show(id) {
+    ['status-pending','status-running','status-done','status-failed'].forEach(function(s) {
+      document.getElementById(s).classList.toggle('hidden', s !== id);
+    });
+    statusEl.classList.remove('hidden');
+  }
+
+  function fmt(v) { return v === null || v === undefined ? '—' : (v * 100).toFixed(1) + '%'; }
+
+  function poll(runId) {
+    fetch('/runs/' + runId + '/status/')
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.status === 'pending') { show('status-pending'); }
+        else if (d.status === 'running') { show('status-running'); }
+        else if (d.status === 'done') {
+          clearInterval(pollTimer);
+          document.getElementById('val-reward').textContent  = fmt(d.reward);
+          document.getElementById('val-public').textContent  = fmt(d.public_score);
+          document.getElementById('val-private').textContent = fmt(d.private_score);
+          document.getElementById('val-lint').textContent    = fmt(d.lint_score);
+          show('status-done');
+          btn.disabled = false;
+          btn.textContent = 'Run Again';
+        } else if (d.status === 'failed') {
+          clearInterval(pollTimer);
+          document.getElementById('val-error').textContent = d.error || 'Unknown error';
+          show('status-failed');
+          btn.disabled = false;
+          btn.textContent = 'Run Again';
+        }
+      });
+  }
+
+  btn.addEventListener('click', function () {
+    btn.disabled = true;
+    btn.textContent = 'Submitting…';
+    show('status-pending');
+
+    var csrf = document.querySelector('#run-form [name=csrfmiddlewaretoken]').value;
+    var body = new URLSearchParams({
+      task_name: meta.task_name,
+      dataset:   meta.dataset,
+    });
+
+    fetch('/runs/submit/', { method: 'POST', headers: {'X-CSRFToken': csrf}, body: body })
+      .then(function(r) { return r.json(); })
+      .then(function(d) {
+        if (d.error) {
+          alert(d.error);
+          btn.disabled = false;
+          btn.textContent = 'Run';
+          return;
+        }
+        btn.textContent = 'Running…';
+        poll(d.run_id);
+        pollTimer = setInterval(function() { poll(d.run_id); }, 3000);
+      });
+  });
+})();
+</script>
+{% endif %}
+{% endblock %}
