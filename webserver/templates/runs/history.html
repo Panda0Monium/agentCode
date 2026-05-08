@@ -10,57 +10,96 @@
     <a href="/" class="text-sm text-blue-600 hover:underline dark:text-blue-400">Browse problems to get started.</a>
   </div>
 {% else %}
-  <div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900">
-    <table class="w-full text-sm">
-      <thead>
-        <tr class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 text-left">
-          <th class="px-4 py-3 font-medium">Problem</th>
-          <th class="px-4 py-3 font-medium">Status</th>
-          <th class="px-4 py-3 font-medium">Reward</th>
-          <th class="px-4 py-3 font-medium">Public</th>
-          <th class="px-4 py-3 font-medium">Private</th>
-          <th class="px-4 py-3 font-medium">Lint</th>
-          <th class="px-4 py-3 font-medium">Date</th>
-        </tr>
-      </thead>
-      <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
-        {% for run in runs %}
-        <tr class="hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
-          <td class="px-4 py-3 font-medium text-gray-800 dark:text-gray-200">
-            <a href="{% url 'run_detail' run.pk %}"
-               class="font-medium text-blue-600 hover:underline dark:text-blue-400">{{ run.task_name }}</a>
-            <span class="ml-1 text-xs text-gray-400">{{ run.dataset }}</span>
-          </td>
-          <td class="px-4 py-3">
-            {% if run.status == 'done' %}
-              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Done</span>
-            {% elif run.status == 'running' %}
-              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Running</span>
-            {% elif run.status == 'pending' %}
-              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Pending</span>
-            {% else %}
-              <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Failed</span>
-            {% endif %}
-          </td>
-          <td class="px-4 py-3 text-gray-700 dark:text-gray-300">
-            {% if run.reward is not None %}{{ run.reward|floatformat:3 }}{% else %}—{% endif %}
-          </td>
-          <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
-            {% if run.public_score is not None %}{{ run.public_score|floatformat:2 }}{% else %}—{% endif %}
-          </td>
-          <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
-            {% if run.private_score is not None %}{{ run.private_score|floatformat:2 }}{% else %}—{% endif %}
-          </td>
-          <td class="px-4 py-3 text-gray-500 dark:text-gray-400">
-            {% if run.lint_score is not None %}{{ run.lint_score|floatformat:2 }}{% else %}—{% endif %}
-          </td>
-          <td class="px-4 py-3 text-gray-400 dark:text-gray-500 whitespace-nowrap">
-            {{ run.created_at|date:"M d, H:i" }}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
+  <div class="space-y-3">
+    {% for run in runs %}
+    <a href="{% url 'run_detail' run.pk %}"
+       class="block bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl px-5 py-4 hover:border-blue-300 dark:hover:border-blue-700 hover:shadow-sm transition-all group">
+
+      <!-- Top row: task name + status + time -->
+      <div class="flex items-start justify-between gap-3 mb-2">
+        <div class="flex items-center gap-3 min-w-0">
+          <span class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">{{ run.task_name }}</span>
+          <span class="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded shrink-0">{{ run.dataset }}</span>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+          {% if run.status == 'done' %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Done</span>
+          {% elif run.status == 'running' %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Running</span>
+          {% elif run.status == 'pending' %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Pending</span>
+          {% else %}
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Failed</span>
+          {% endif %}
+          <span class="text-xs text-gray-400 tabular-nums" data-ts="{{ run.created_at|date:'U' }}">{{ run.created_at|date:"M d, H:i" }}</span>
+        </div>
+      </div>
+
+      <!-- Model name -->
+      {% if run.user.model_name %}
+      <p class="text-xs text-gray-400 dark:text-gray-500 mb-3 font-mono">{{ run.user.model_name }}</p>
+      {% endif %}
+
+      <!-- Score row -->
+      {% if run.status == 'done' and run.reward is not None %}
+      <div class="flex items-center gap-4">
+        <!-- Reward bar -->
+        <div class="flex items-center gap-2 flex-1 min-w-0">
+          <span class="text-xs text-gray-400 w-12 shrink-0">Reward</span>
+          <div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+            <div class="h-full rounded-full {% if run.reward >= 0.8 %}bg-green-500{% elif run.reward >= 0.5 %}bg-yellow-500{% else %}bg-red-500{% endif %}"
+              style="width: {% widthratio run.reward 1 100 %}%"></div>
+          </div>
+          <span class="text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums w-10 text-right">{{ run.reward|floatformat:2 }}</span>
+        </div>
+        <!-- Score chips -->
+        <div class="flex items-center gap-2 shrink-0">
+          {% if run.public_score is not None %}
+          <span class="text-xs px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-mono tabular-nums">
+            P {% widthratio run.public_score 1 100 %}%
+          </span>
+          {% endif %}
+          {% if run.private_score is not None %}
+          <span class="text-xs px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-mono tabular-nums">
+            Pr {% widthratio run.private_score 1 100 %}%
+          </span>
+          {% endif %}
+          {% if run.lint_score is not None %}
+          <span class="text-xs px-2 py-0.5 rounded-md bg-gray-50 dark:bg-gray-800 text-gray-500 dark:text-gray-400 font-mono tabular-nums">
+            L {% widthratio run.lint_score 1 100 %}%
+          </span>
+          {% endif %}
+        </div>
+      </div>
+      {% elif run.status == 'failed' %}
+      <p class="text-xs text-red-500 dark:text-red-400 truncate">{{ run.error|truncatechars:120 }}</p>
+      {% elif run.status == 'running' or run.status == 'pending' %}
+      <div class="h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+        <div class="h-full bg-blue-400 rounded-full animate-pulse" style="width:40%"></div>
+      </div>
+      {% endif %}
+
+    </a>
+    {% endfor %}
   </div>
 {% endif %}
+
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+// Convert unix timestamps to relative time strings
+document.querySelectorAll('[data-ts]').forEach(function(el) {
+  var ts  = parseInt(el.dataset.ts) * 1000;
+  var now = Date.now();
+  var diff = Math.floor((now - ts) / 1000);
+  var rel;
+  if      (diff < 60)          rel = 'just now';
+  else if (diff < 3600)        rel = Math.floor(diff / 60) + ' min ago';
+  else if (diff < 86400)       rel = Math.floor(diff / 3600) + ' hr ago';
+  else if (diff < 86400 * 7)   rel = Math.floor(diff / 86400) + 'd ago';
+  else                         rel = el.textContent;  // fall back to formatted date
+  el.textContent = rel;
+});
+</script>
 {% endblock %}
