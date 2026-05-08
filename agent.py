@@ -145,7 +145,7 @@ def _fmt_lint_result(result: LintResult) -> str:
 def _dispatch(name: str, args: dict, session: Session) -> str:
     if name == "list_files":
         files = session.list_files()
-        return "\n".join(files) if files else "(no files)"
+        return "\n".join(f.replace("\\", "/") for f in files) if files else "(no files)"
     if name == "read_file":
         return session.read_file(args["path"])
     if name == "write_file":
@@ -181,15 +181,22 @@ def coding_agent(instruction: str) -> Callable[[Session], None]:
             HumanMessage(content=instruction),
         ]
 
+        _empty_turns = 0
         while True:
             response: AIMessage = llm.invoke(messages)
             session.log_llm(messages, response)
             messages.append(response)
 
             if not response.tool_calls:
-                # Model finished — no more tool calls
+                if not (response.content or "").strip():
+                    # Model returned a blank response — nudge it once, then give up
+                    _empty_turns += 1
+                    if _empty_turns < 3:
+                        messages.append(HumanMessage(content="Continue. Use the write_file tool to implement the solution."))
+                        continue
                 break
 
+            _empty_turns = 0
             for call in response.tool_calls:
                 try:
                     result = _dispatch(call["name"], call["args"], session)

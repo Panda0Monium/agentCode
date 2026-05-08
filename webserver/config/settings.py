@@ -1,12 +1,15 @@
+import os
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-agentcode-dev-key-change-in-production'
+SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY', 'django-insecure-agentcode-dev-key-change-in-production')
 
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'true').lower() != 'false'
 
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = os.environ.get('DJANGO_ALLOWED_HOSTS', '*').split(',')
+
+SITE_THEME = os.environ.get('DJANGO_THEME', 'light')
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -55,6 +58,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'config.context_processors.theme',
             ],
         },
     },
@@ -87,6 +91,10 @@ LOGOUT_REDIRECT_URL = '/'
 
 SOCIALACCOUNT_PROVIDERS = {
     'huggingface': {
+        'APP': {
+            'client_id':     os.environ.get('HF_CLIENT_ID', ''),
+            'secret':        os.environ.get('HF_CLIENT_SECRET', ''),
+        },
         'SCOPE': ['openid', 'profile', 'email', 'inference-api'],
     }
 }

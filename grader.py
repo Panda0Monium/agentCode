@@ -56,11 +56,16 @@ class Grader:
         lint_result = _tools.run_lint(session.sandbox)
 
         w = task.weights
-        reward = (
-            w.public * public_result.score
-            + w.private * private_result.score
-            + w.lint * lint_result.score
-        )
+        if private_result.total == 0:
+            # No private tests — normalize over the weights that actually apply.
+            applicable = w.public + w.lint
+            reward = (w.public * public_result.score + w.lint * lint_result.score) / applicable
+        else:
+            reward = (
+                w.public * public_result.score
+                + w.private * private_result.score
+                + w.lint * lint_result.score
+            )
 
         return GradeResult(
             reward=round(reward, 6),

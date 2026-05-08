@@ -2,158 +2,178 @@
 {% block title_suffix %} — {{ problem.display_name }}{% endblock %}
 
 {% block content %}
-<a href="/" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400
-                   hover:underline mb-6">
+<a href="/" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4">
   &#8592; Problem Catalogue
 </a>
 
-<!-- Header card -->
-<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800
-            rounded-xl p-6 mb-5">
-  <div class="flex flex-wrap items-start justify-between gap-4">
-    <div class="flex-1 min-w-0">
-      <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-3">
-        {{ problem.display_name }}
-      </h1>
-      <div class="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-        <span>
-          <span class="font-medium text-gray-700 dark:text-gray-300">Dataset</span>
-          &nbsp;{{ problem.dataset|title }}
-        </span>
-        <span>
-          <span class="font-medium text-gray-700 dark:text-gray-300">Language</span>
-          &nbsp;<span class="capitalize">{{ problem.language }}</span>
-        </span>
-        <span>
-          <span class="font-medium text-gray-700 dark:text-gray-300">Timeout</span>
-          &nbsp;{{ problem.timeout_sec }}s
-        </span>
-      </div>
+<!-- ═══════════════════════ STICKY HEADER ═══════════════════════ -->
+<div class="sticky top-0 z-20 -mx-6 px-6 py-3 bg-white/90 dark:bg-gray-950/90 backdrop-blur border-b border-gray-200 dark:border-gray-800 mb-5">
+  <div class="max-w-6xl flex items-center justify-between gap-4">
+    <div class="flex items-center gap-3 min-w-0">
+      <h1 class="text-base font-bold text-gray-900 dark:text-white truncate">{{ problem.display_name }}</h1>
+      <span class="text-gray-300 dark:text-gray-600 hidden sm:inline">·</span>
+      <span class="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline capitalize">{{ problem.language }}</span>
+      <span class="text-gray-300 dark:text-gray-600 hidden sm:inline">·</span>
+      <span class="text-sm text-gray-500 dark:text-gray-400 hidden sm:inline">{{ problem.timeout_sec }}s</span>
     </div>
-
-    <!-- Difficulty badge -->
-    {% if problem.difficulty == "easy" %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium
-                   bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Easy</span>
-    {% elif problem.difficulty == "medium" %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium
-                   bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">Medium</span>
-    {% elif problem.difficulty == "hard" %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium
-                   bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Hard</span>
-    {% else %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium
-                   bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
-        {{ problem.difficulty|capfirst }}
-      </span>
-    {% endif %}
+    <div class="flex items-center gap-3 shrink-0">
+      <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded">{{ problem.dataset }}</span>
+      {% if problem.difficulty == "easy" %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Easy</span>
+      {% elif problem.difficulty == "medium" %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300">Medium</span>
+      {% elif problem.difficulty == "hard" %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Hard</span>
+      {% else %}
+        <span class="px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">{{ problem.difficulty|capfirst }}</span>
+      {% endif %}
+    </div>
   </div>
 </div>
 
-<!-- Instruction card -->
-<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 mb-5">
-  <h2 class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-4">Problem Statement</h2>
-  <div id="instruction-markdown" class="instruction-body text-sm text-gray-700 dark:text-gray-300 leading-relaxed"></div>
-</div>
+<!-- ═══════════════════ SPLIT-PANE LAYOUT ═══════════════════ -->
+<div class="flex flex-col lg:flex-row gap-5">
 
-<!-- Run card -->
-<div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
-  {% if not user.is_authenticated %}
-    <p class="text-sm text-gray-500 dark:text-gray-400">
-      <a href="{% url 'account_login' %}" class="text-blue-600 hover:underline dark:text-blue-400">Sign in</a>
-      to run this problem against your model.
-    </p>
-  {% elif not user.model_api_url or not user.model_name or not user.model_api_key %}
-    <p class="text-sm text-gray-500 dark:text-gray-400">
-      <a href="{% url 'model_config' %}" class="text-blue-600 hover:underline dark:text-blue-400">Configure your model</a>
-      before running.
-    </p>
-  {% else %}
-    <div class="flex items-center justify-between mb-4">
-      <h2 class="text-base font-semibold text-gray-800 dark:text-gray-200">Run</h2>
-      <button id="run-btn"
-              class="px-4 py-1.5 rounded-md bg-blue-600 text-white text-sm font-medium
-                     hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-        Run
-      </button>
+  <!-- ── LEFT: Problem description ── -->
+  <div class="flex-1 min-w-0">
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6">
+      <div id="instruction-markdown" class="instruction-body text-sm text-gray-700 dark:text-gray-300 leading-relaxed"></div>
+    </div>
+  </div>
+
+  <!-- ── RIGHT: Stub + Run panel (sticky on desktop) ── -->
+  <div class="lg:w-[420px] shrink-0 space-y-4 lg:sticky lg:top-[60px] lg:self-start">
+
+    <!-- Stub code panel -->
+    <div class="bg-gray-950 border border-gray-800 rounded-xl overflow-hidden" id="stub-panel">
+      <!-- File tabs (populated by JS) -->
+      <div id="stub-tabs" class="flex border-b border-gray-800 overflow-x-auto"></div>
+      <!-- Code area -->
+      <div class="relative">
+        <pre id="stub-code" class="text-xs text-gray-300 p-4 overflow-x-auto overflow-y-auto font-mono leading-relaxed" style="max-height:380px; tab-size:4"></pre>
+        <button onclick="copyStub()" id="copy-btn"
+          class="absolute top-2 right-2 px-2 py-1 text-xs rounded bg-gray-800 text-gray-400 hover:bg-gray-700 hover:text-gray-200 transition-colors">
+          Copy
+        </button>
+      </div>
     </div>
 
-    <div id="run-status" class="hidden">
-      <div id="status-pending" class="hidden text-sm text-gray-500 dark:text-gray-400">Queued…</div>
-      <div id="status-running" class="hidden text-sm text-blue-600 dark:text-blue-400">Running…</div>
-      <div id="status-done" class="hidden">
-        <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Reward</p>
-            <p id="val-reward" class="text-lg font-bold text-gray-900 dark:text-white"></p>
+    <!-- Run panel -->
+    <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-5">
+
+      {% if not user.is_authenticated %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          <a href="{% url 'account_login' %}" class="text-blue-600 hover:underline dark:text-blue-400">Sign in</a>
+          to run this problem against your model.
+        </p>
+      {% elif not user.model_api_url or not user.model_name or not user.model_api_key %}
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          <a href="{% url 'model_config' %}" class="text-blue-600 hover:underline dark:text-blue-400">Configure your model</a>
+          before running.
+        </p>
+      {% else %}
+        <!-- Model info -->
+        <div class="flex items-center justify-between mb-4">
+          <div class="min-w-0">
+            <p class="text-xs text-gray-400 dark:text-gray-500 mb-0.5">Model</p>
+            <p class="text-sm font-mono text-gray-700 dark:text-gray-300 truncate">{{ user.model_name }}</p>
           </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Public</p>
-            <p id="val-public" class="text-lg font-bold text-gray-900 dark:text-white"></p>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Private</p>
-            <p id="val-private" class="text-lg font-bold text-gray-900 dark:text-white"></p>
-          </div>
-          <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-            <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Lint</p>
-            <p id="val-lint" class="text-lg font-bold text-gray-900 dark:text-white"></p>
-          </div>
+          <button id="run-btn"
+            class="ml-3 shrink-0 flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white text-sm font-medium
+                   hover:bg-blue-700 active:scale-95 transition-all disabled:opacity-50 disabled:cursor-not-allowed">
+            <svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/>
+            </svg>
+            Run Agent
+          </button>
         </div>
-      </div>
-      <div id="status-failed" class="hidden">
-        <p class="text-sm text-red-500 font-medium mb-2">Run failed</p>
-        <pre id="val-error" class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded p-3 overflow-x-auto whitespace-pre-wrap"></pre>
-      </div>
+
+        <!-- Status section -->
+        <div id="run-status" class="hidden">
+
+          <div id="status-pending" class="hidden">
+            <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
+              <div class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
+              Queued…
+            </div>
+          </div>
+
+          <div id="status-running" class="hidden">
+            <div class="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mb-2">
+              <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+              Running agent…
+            </div>
+            <div class="h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+              <div class="h-full bg-blue-500 rounded-full animate-pulse" style="width:60%"></div>
+            </div>
+          </div>
+
+          <div id="status-done" class="hidden">
+            <div class="grid grid-cols-2 gap-2 mb-3">
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                <p class="text-xs text-gray-400 mb-0.5">Reward</p>
+                <p id="val-reward" class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"></p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                <p class="text-xs text-gray-400 mb-0.5">Public</p>
+                <p id="val-public" class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"></p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                <p class="text-xs text-gray-400 mb-0.5">Private</p>
+                <p id="val-private" class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"></p>
+              </div>
+              <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
+                <p class="text-xs text-gray-400 mb-0.5">Lint</p>
+                <p id="val-lint" class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"></p>
+              </div>
+            </div>
+            <a id="run-detail-link" href="#"
+               class="hidden flex items-center justify-center gap-1 w-full py-2 rounded-lg border border-blue-200 dark:border-blue-800 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+              View full run &rarr;
+            </a>
+          </div>
+
+          <div id="status-failed" class="hidden">
+            <p class="text-sm font-medium text-red-500 mb-2">Run failed</p>
+            <pre id="val-error" class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap max-h-32"></pre>
+          </div>
+
+        </div>
+
+        <form id="run-form" class="hidden">{% csrf_token %}</form>
+      {% endif %}
     </div>
 
-    <form id="run-form" class="hidden">
-      {% csrf_token %}
-    </form>
-  {% endif %}
+  </div>
 </div>
 
-<script id="instruction-raw" type="application/json">{{ instruction_json }}</script>
-<script id="problem-meta" type="application/json">{{ problem_meta_json }}</script>
+<script id="instruction-raw"  type="application/json">{{ instruction_json }}</script>
+<script id="stub-files-data"  type="application/json">{{ stub_files_json }}</script>
+<script id="problem-meta"     type="application/json">{{ problem_meta_json }}</script>
 
 <style>
   .instruction-body h1, .instruction-body h2, .instruction-body h3 {
-    font-weight: 600;
-    margin-top: 1.25rem;
-    margin-bottom: 0.5rem;
-    color: inherit;
+    font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: inherit;
   }
-  .instruction-body h1 { font-size: 1.25rem; }
-  .instruction-body h2 { font-size: 1.1rem; }
+  .instruction-body h1 { font-size: 1.2rem; }
+  .instruction-body h2 { font-size: 1.05rem; }
   .instruction-body h3 { font-size: 1rem; }
   .instruction-body p  { margin-bottom: 0.75rem; }
   .instruction-body ul, .instruction-body ol {
-    margin: 0.5rem 0 0.75rem 1.25rem;
-    line-height: 1.7;
+    margin: 0.5rem 0 0.75rem 1.25rem; line-height: 1.7;
   }
-  .instruction-body ul { list-style: disc; }
-  .instruction-body ol { list-style: decimal; }
+  .instruction-body ul  { list-style: disc; }
+  .instruction-body ol  { list-style: decimal; }
   .instruction-body code {
-    background: #f3f4f6;
-    border-radius: 0.25rem;
-    padding: 0.1em 0.35em;
-    font-size: 0.85em;
-    font-family: ui-monospace, monospace;
+    background: #f3f4f6; border-radius: 0.25rem;
+    padding: 0.1em 0.35em; font-size: 0.85em; font-family: ui-monospace, monospace;
   }
   .instruction-body pre {
-    background: #f3f4f6;
-    border-radius: 0.375rem;
-    padding: 1rem;
-    overflow-x: auto;
-    margin: 0.75rem 0;
-    font-size: 0.85rem;
-    font-family: ui-monospace, monospace;
-    line-height: 1.6;
+    background: #f3f4f6; border-radius: 0.375rem; padding: 1rem;
+    overflow-x: auto; margin: 0.75rem 0; font-size: 0.85rem;
+    font-family: ui-monospace, monospace; line-height: 1.6;
   }
-  .instruction-body pre code {
-    background: none;
-    padding: 0;
-  }
+  .instruction-body pre code { background: none; padding: 0; }
   .dark .instruction-body code { background: #1f2937; }
   .dark .instruction-body pre  { background: #1f2937; }
 </style>
@@ -161,16 +181,60 @@
 
 {% block extra_scripts %}
 <script>
+  // Render markdown instruction
   var raw = JSON.parse(document.getElementById('instruction-raw').textContent);
   document.getElementById('instruction-markdown').innerHTML = marked.parse(raw);
+
+  // Render stub code panel
+  (function() {
+    var stubs = JSON.parse(document.getElementById('stub-files-data').textContent) || [];
+    if (!stubs.length) {
+      document.getElementById('stub-panel').classList.add('hidden');
+      return;
+    }
+
+    var current = 0;
+    var tabsEl  = document.getElementById('stub-tabs');
+    var codeEl  = document.getElementById('stub-code');
+
+    function showStub(i) {
+      current = i;
+      codeEl.textContent = stubs[i].content;
+      tabsEl.querySelectorAll('button').forEach(function(b, j) {
+        b.classList.toggle('border-b-2',       j === i);
+        b.classList.toggle('border-blue-500',  j === i);
+        b.classList.toggle('text-blue-400',    j === i);
+        b.classList.toggle('text-gray-500',    j !== i);
+      });
+    }
+
+    stubs.forEach(function(f, i) {
+      var btn = document.createElement('button');
+      btn.textContent = f.path;
+      btn.className   = 'px-3 py-2 text-xs font-mono whitespace-nowrap transition-colors ' +
+        (i === 0 ? 'text-blue-400 border-b-2 border-blue-500' : 'text-gray-500 hover:text-gray-300');
+      btn.addEventListener('click', function() { showStub(i); });
+      tabsEl.appendChild(btn);
+    });
+
+    showStub(0);
+
+    window.copyStub = function() {
+      navigator.clipboard.writeText(stubs[current].content).then(function() {
+        var btn = document.getElementById('copy-btn');
+        btn.textContent = 'Copied!';
+        setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+      });
+    };
+  })();
 </script>
 
 {% if user.is_authenticated and user.model_api_url and user.model_name and user.model_api_key %}
 <script>
 (function () {
-  var meta    = JSON.parse(document.getElementById('problem-meta').textContent);
-  var btn     = document.getElementById('run-btn');
-  var statusEl = document.getElementById('run-status');
+  var meta      = JSON.parse(document.getElementById('problem-meta').textContent);
+  var btn       = document.getElementById('run-btn');
+  var statusEl  = document.getElementById('run-status');
   var pollTimer = null;
 
   function show(id) {
@@ -180,13 +244,15 @@
     statusEl.classList.remove('hidden');
   }
 
-  function fmt(v) { return v === null || v === undefined ? '—' : (v * 100).toFixed(1) + '%'; }
+  function fmt(v) {
+    return v === null || v === undefined ? '—' : (v * 100).toFixed(1) + '%';
+  }
 
   function poll(runId) {
     fetch('/runs/' + runId + '/status/')
       .then(function(r) { return r.json(); })
       .then(function(d) {
-        if (d.status === 'pending') { show('status-pending'); }
+        if      (d.status === 'pending') { show('status-pending'); }
         else if (d.status === 'running') { show('status-running'); }
         else if (d.status === 'done') {
           clearInterval(pollTimer);
@@ -194,15 +260,18 @@
           document.getElementById('val-public').textContent  = fmt(d.public_score);
           document.getElementById('val-private').textContent = fmt(d.private_score);
           document.getElementById('val-lint').textContent    = fmt(d.lint_score);
+          var link = document.getElementById('run-detail-link');
+          link.href = '/runs/' + runId + '/';
+          link.classList.remove('hidden');
           show('status-done');
           btn.disabled = false;
-          btn.textContent = 'Run Again';
+          btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg> Run Again';
         } else if (d.status === 'failed') {
           clearInterval(pollTimer);
           document.getElementById('val-error').textContent = d.error || 'Unknown error';
           show('status-failed');
           btn.disabled = false;
-          btn.textContent = 'Run Again';
+          btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg> Run Again';
         }
       });
   }
@@ -213,10 +282,7 @@
     show('status-pending');
 
     var csrf = document.querySelector('#run-form [name=csrfmiddlewaretoken]').value;
-    var body = new URLSearchParams({
-      task_name: meta.task_name,
-      dataset:   meta.dataset,
-    });
+    var body = new URLSearchParams({ task_name: meta.task_name, dataset: meta.dataset });
 
     fetch('/runs/submit/', { method: 'POST', headers: {'X-CSRFToken': csrf}, body: body })
       .then(function(r) { return r.json(); })
@@ -224,7 +290,7 @@
         if (d.error) {
           alert(d.error);
           btn.disabled = false;
-          btn.textContent = 'Run';
+          btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg> Run Agent';
           return;
         }
         btn.textContent = 'Running…';

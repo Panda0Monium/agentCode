@@ -8,6 +8,9 @@ _ROOT = Path(__file__).resolve().parent.parent.parent
 if str(_ROOT) not in sys.path:
     sys.path.insert(0, str(_ROOT))
 
+from dotenv import load_dotenv
+load_dotenv(_ROOT / '.env')
+
 
 def execute_run(run_id: int) -> None:
     from django.utils import timezone

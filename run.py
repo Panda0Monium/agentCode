@@ -14,6 +14,9 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from reports import write_bulk_report, write_report
 from runner import run_episode
 from tasks import Task

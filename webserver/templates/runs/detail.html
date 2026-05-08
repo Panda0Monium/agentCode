@@ -9,41 +9,99 @@
   &#8592; My Runs
 </a>
 
-<!-- Header -->
+<!-- ═══════════════════════════════ HEADER ═══════════════════════════════ -->
 <div class="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-xl p-6 mb-5">
-  <div class="flex flex-wrap items-start justify-between gap-4">
-    <div>
-      <h1 class="text-xl font-bold text-gray-900 dark:text-white mb-1">{{ run.task_name }}</h1>
-      <p class="text-sm text-gray-500 dark:text-gray-400">{{ run.created_at|date:"M d, Y H:i" }}</p>
-    </div>
+
+  <!-- Top row: title + status badge -->
+  <div class="flex items-start justify-between gap-4 mb-1">
+    <h1 class="text-xl font-bold text-gray-900 dark:text-white">{{ run.task_name }}</h1>
     {% if run.status == 'done' %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300">Done</span>
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300 shrink-0">Done</span>
     {% elif run.status == 'running' %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300">Running</span>
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300 shrink-0">Running</span>
     {% elif run.status == 'failed' %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300">Failed</span>
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300 shrink-0">Failed</span>
     {% else %}
-      <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">Pending</span>
+      <span class="px-3 py-1 rounded-full text-sm font-medium bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400 shrink-0">Pending</span>
     {% endif %}
   </div>
 
+  <!-- Metadata row -->
+  <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mb-5">
+    <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{{ run.dataset }}</span>
+    <span class="text-gray-300 dark:text-gray-600">·</span>
+    <span>{{ run.created_at|date:"M d, Y H:i" }}</span>
+    <span class="text-gray-300 dark:text-gray-600">·</span>
+    <span id="meta-elapsed" class="tabular-nums">—</span>
+    <span class="text-gray-300 dark:text-gray-600">·</span>
+    <span><span id="meta-turns" class="tabular-nums">—</span> LLM turns</span>
+  </div>
+
   {% if run.status == 'done' %}
-  <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
-    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Reward</p>
-      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.reward|floatformat:3 }}</p>
+  <!-- Score section: reward ring + bars -->
+  <div class="flex flex-col sm:flex-row gap-6 items-start">
+
+    <!-- Reward ring -->
+    <div class="shrink-0 flex flex-col items-center gap-1">
+      <div class="relative w-24 h-24">
+        <svg viewBox="0 0 96 96" class="w-full h-full">
+          <!-- Track -->
+          <circle cx="48" cy="48" r="36" fill="none" stroke-width="8"
+            class="stroke-gray-100 dark:stroke-gray-800"/>
+          <!-- Progress (set by JS) -->
+          <circle id="reward-ring" cx="48" cy="48" r="36" fill="none" stroke="#3b82f6" stroke-width="8"
+            stroke-linecap="round" stroke-dasharray="226.19" stroke-dashoffset="226.19"
+            transform="rotate(-90 48 48)"/>
+        </svg>
+        <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+          <span class="text-xl font-bold text-gray-900 dark:text-white tabular-nums leading-none">{{ run.reward|floatformat:2 }}</span>
+          <span class="text-xs text-gray-400 mt-0.5">reward</span>
+        </div>
+      </div>
     </div>
-    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Public</p>
-      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.public_score|floatformat:2 }}</p>
-    </div>
-    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Private</p>
-      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.private_score|floatformat:2 }}</p>
-    </div>
-    <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3 text-center">
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-1">Lint</p>
-      <p class="text-xl font-bold text-gray-900 dark:text-white">{{ run.lint_score|floatformat:2 }}</p>
+
+    <!-- Score bars: public / private / lint -->
+    <div class="flex-1 w-full min-w-0 space-y-3">
+
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Public</span>
+          <div class="flex items-center gap-3">
+            <span id="bar-public-count" class="text-xs text-gray-400 font-mono"></span>
+            <span id="bar-public-pct" class="text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums w-10 text-right">—</span>
+          </div>
+        </div>
+        <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div id="bar-public" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Private</span>
+          <div class="flex items-center gap-3">
+            <span id="bar-private-count" class="text-xs text-gray-400 font-mono"></span>
+            <span id="bar-private-pct" class="text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums w-10 text-right">—</span>
+          </div>
+        </div>
+        <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div id="bar-private" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
+      <div>
+        <div class="flex items-center justify-between mb-1">
+          <span class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider">Lint</span>
+          <div class="flex items-center gap-3">
+            <span id="bar-lint-count" class="text-xs text-gray-400 font-mono"></span>
+            <span id="bar-lint-pct" class="text-sm font-semibold text-gray-700 dark:text-gray-300 tabular-nums w-10 text-right">—</span>
+          </div>
+        </div>
+        <div class="h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
+          <div id="bar-lint" class="h-full rounded-full transition-all duration-700" style="width:0%"></div>
+        </div>
+      </div>
+
     </div>
   </div>
   {% endif %}
@@ -51,35 +109,45 @@
   {% if run.status == 'failed' and run.error %}
   <div class="mt-4">
     <p class="text-sm font-medium text-red-500 mb-2">Error</p>
-    <pre class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded p-3 overflow-x-auto whitespace-pre-wrap">{{ run.error }}</pre>
+    <pre class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{{ run.error }}</pre>
   </div>
   {% endif %}
+
+</div>
+<!-- end header -->
+
+<!-- Hidden score data for JS -->
+<div id="score-data" class="hidden"
+  data-reward="{{ run.reward|default:0 }}"
+  data-public="{{ run.public_score|default:0 }}"
+  data-private="{{ run.private_score|default:0 }}"
+  data-lint="{{ run.lint_score|default:0 }}"
+  data-started="{{ run.started_at|date:'U'|default:'' }}"
+  data-completed="{{ run.completed_at|date:'U'|default:'' }}">
 </div>
 
 {% if run.trajectory %}
-<!-- Tabs -->
+<!-- ═══════════════════════════════ TABS ═════════════════════════════════ -->
 <div class="mb-4 border-b border-gray-200 dark:border-gray-800">
   <nav class="flex gap-1 -mb-px">
-    {% for tab in "Overview,Code Changes,Test Results,Agent Log"|split:"," %}
-    {% endfor %}
-    <button onclick="switchTab('overview')" id="tab-overview"
-            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Overview</button>
+    <button onclick="switchTab('timeline')" id="tab-timeline"
+      class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Timeline</button>
     <button onclick="switchTab('code')" id="tab-code"
-            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Code Changes</button>
+      class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Code Changes</button>
     <button onclick="switchTab('tests')" id="tab-tests"
-            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Test Results</button>
+      class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Test Results</button>
     <button onclick="switchTab('log')" id="tab-log"
-            class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Agent Log</button>
+      class="tab-btn px-4 py-2.5 text-sm font-medium border-b-2 transition-colors">Agent Log</button>
   </nav>
 </div>
 
-<div id="pane-overview" class="tab-pane"></div>
+<div id="pane-timeline" class="tab-pane"></div>
 <div id="pane-code"     class="tab-pane hidden"></div>
 <div id="pane-tests"   class="tab-pane hidden"></div>
 <div id="pane-log"     class="tab-pane hidden"></div>
 
 {% else %}
-<p class="text-sm text-gray-400 dark:text-gray-500">No trajectory data for this run.</p>
+<p class="text-sm text-gray-400 dark:text-gray-500 mt-2">No trajectory data for this run.</p>
 {% endif %}
 
 <script id="trajectory-data" type="application/json">{{ run.trajectory|default:"null"|safe_json }}</script>
@@ -90,80 +158,305 @@
 <script src="https://cdn.jsdelivr.net/npm/diff2html/bundles/js/diff2html-ui.min.js"></script>
 <script>
 (function () {
-  // ── helpers ──────────────────────────────────────────────────────────
+
+  // ── DATA ─────────────────────────────────────────────────────────────
+  var DATA  = JSON.parse(document.getElementById('trajectory-data').textContent) || {steps:[]};
+  var STEPS = DATA.steps || [];
+  var SD    = document.getElementById('score-data');
+
+  var SCORES = {
+    reward:  parseFloat((SD && SD.dataset.reward)  || 0),
+    public:  parseFloat((SD && SD.dataset.public)  || 0),
+    private: parseFloat((SD && SD.dataset.private) || 0),
+    lint:    parseFloat((SD && SD.dataset.lint)    || 0),
+  };
+
+  // ── HELPERS ──────────────────────────────────────────────────────────
   function esc(s) {
     return String(s || '')
       .replace(/&/g,'&amp;').replace(/</g,'&lt;')
       .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   }
   function fmt(ts) { return ts.toFixed(1) + 's'; }
-  function pct(v)  { return v === null || v === undefined ? '—' : (v * 100).toFixed(0) + '%'; }
 
-  var DATA = JSON.parse(document.getElementById('trajectory-data').textContent) || {steps:[]};
-  var STEPS = DATA.steps || [];
+  function barColor(v) {
+    return v >= 0.8 ? 'bg-green-500' : v >= 0.5 ? 'bg-yellow-500' : 'bg-red-500';
+  }
+  function ringColor(v) {
+    return v >= 0.8 ? '#22c55e' : v >= 0.5 ? '#3b82f6' : '#f59e0b';
+  }
 
-  // ── tab switching ─────────────────────────────────────────────────────
-  var TABS = ['overview','code','tests','log'];
-  window.switchTab = function(name) {
-    TABS.forEach(function(t) {
-      document.getElementById('pane-' + t).classList.toggle('hidden', t !== name);
-      var btn = document.getElementById('tab-' + t);
-      if (t === name) {
-        btn.classList.add('border-blue-600','text-blue-600');
-        btn.classList.remove('border-transparent','text-gray-500','dark:text-gray-400');
-      } else {
-        btn.classList.remove('border-blue-600','text-blue-600');
-        btn.classList.add('border-transparent','text-gray-500','dark:text-gray-400');
-      }
-    });
-  };
-
-  // ── tool icons ────────────────────────────────────────────────────────
+  // ── ICONS & TOOL COLORS ──────────────────────────────────────────────
   var ICONS = {
-    llm_invoke:  '🤖',
-    write_file:  '✏️',
-    read_file:   '📖',
-    run_tests:   '🧪',
-    run_lint:    '🔍',
-    list_files:  '📁',
+    llm_invoke: '🤖', write_file: '✏️', read_file: '📖',
+    run_tests: '🧪', run_lint: '🔍', list_files: '📁',
+  };
+  var TOOL_TAG_COLORS = {
+    llm_invoke:  'text-purple-500 dark:text-purple-400',
+    write_file:  'text-blue-500 dark:text-blue-400',
+    read_file:   'text-cyan-600 dark:text-cyan-400',
+    run_tests:   'text-green-600 dark:text-green-400',
+    run_lint:    'text-amber-600 dark:text-amber-400',
+    list_files:  'text-gray-500 dark:text-gray-400',
   };
 
   function stepSummary(s) {
     if (s.tool === 'llm_invoke') {
       var n = (s.tool_calls || []).length;
-      return n ? 'Called ' + n + ' tool' + (n > 1 ? 's' : '') : 'Finished (no tool calls)';
+      return n ? 'Called ' + n + ' tool' + (n > 1 ? 's' : '') : 'Finished';
     }
-    if (s.tool === 'write_file')  return 'Wrote ' + esc(s.path);
-    if (s.tool === 'read_file')   return 'Read ' + esc(s.path);
+    if (s.tool === 'write_file')  return esc(s.path);
+    if (s.tool === 'read_file')   return esc(s.path);
     if (s.tool === 'list_files')  return 'Listed files';
-    if (s.tool === 'run_tests')   return 'Tests: ' + s.passed + '/' + s.total + ' passed';
-    if (s.tool === 'run_lint')    return 'Lint: ' + (s.errors && s.errors.length ? s.errors.length + ' error(s)' : 'clean');
+    if (s.tool === 'run_tests')   return s.passed + '/' + s.total + ' passed';
+    if (s.tool === 'run_lint')    return (s.errors && s.errors.length) ? s.errors.length + ' error(s)' : 'clean';
     return s.tool;
   }
 
-  // ── OVERVIEW ──────────────────────────────────────────────────────────
-  function buildOverview() {
-    var rows = STEPS.map(function(s, i) {
-      return '<tr class="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/40">' +
-        '<td class="px-4 py-2.5 text-gray-400 text-xs">' + fmt(s.timestamp) + '</td>' +
-        '<td class="px-4 py-2.5 text-sm">' + (ICONS[s.tool] || '') + '</td>' +
-        '<td class="px-4 py-2.5 text-xs font-mono text-gray-500 dark:text-gray-400">' + esc(s.tool) + '</td>' +
-        '<td class="px-4 py-2.5 text-sm text-gray-700 dark:text-gray-300">' + stepSummary(s) + '</td>' +
-      '</tr>';
-    }).join('');
+  // ── TAB SYSTEM ───────────────────────────────────────────────────────
+  var TABS = ['timeline','code','tests','log'];
+  window.switchTab = function(name) {
+    TABS.forEach(function(t) {
+      document.getElementById('pane-' + t).classList.toggle('hidden', t !== name);
+      var btn = document.getElementById('tab-' + t);
+      if (t === name) {
+        btn.classList.add('border-blue-600','text-blue-600','dark:text-blue-400','dark:border-blue-400');
+        btn.classList.remove('border-transparent','text-gray-500','dark:text-gray-400');
+      } else {
+        btn.classList.remove('border-blue-600','text-blue-600','dark:text-blue-400','dark:border-blue-400');
+        btn.classList.add('border-transparent','text-gray-500','dark:text-gray-400');
+      }
+    });
+  };
 
-    document.getElementById('pane-overview').innerHTML =
-      '<div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900">' +
-      '<table class="w-full text-sm">' +
-      '<thead><tr class="bg-gray-50 dark:bg-gray-800/60 text-gray-500 dark:text-gray-400 text-left">' +
-      '<th class="px-4 py-3 font-medium w-16">Time</th>' +
-      '<th class="px-4 py-3 w-8"></th>' +
-      '<th class="px-4 py-3 font-medium w-32">Tool</th>' +
-      '<th class="px-4 py-3 font-medium">Summary</th>' +
-      '</tr></thead><tbody>' + rows + '</tbody></table></div>';
+  // ── HEADER INIT ──────────────────────────────────────────────────────
+  function initHeader() {
+    // Elapsed time
+    var started   = parseInt((SD && SD.dataset.started)   || 0);
+    var completed = parseInt((SD && SD.dataset.completed) || 0);
+    var elEl = document.getElementById('meta-elapsed');
+    if (elEl) {
+      if (started && completed && completed > started) {
+        elEl.textContent = (completed - started) + 's';
+      } else if (STEPS.length) {
+        elEl.textContent = fmt(STEPS[STEPS.length-1].timestamp);
+      }
+    }
+
+    // LLM turn count
+    var turnsEl = document.getElementById('meta-turns');
+    if (turnsEl) {
+      turnsEl.textContent = STEPS.filter(function(s) { return s.tool === 'llm_invoke'; }).length;
+    }
+
+    // Reward ring
+    var ring = document.getElementById('reward-ring');
+    if (ring) {
+      var circ = 226.19;
+      ring.setAttribute('stroke-dashoffset', (circ * (1 - SCORES.reward)).toFixed(2));
+      ring.setAttribute('stroke', ringColor(SCORES.reward));
+    }
+
+    // Score bars
+    function setBar(key, count, countSuffix) {
+      var v = SCORES[key];
+      var bar  = document.getElementById('bar-' + key);
+      var pct  = document.getElementById('bar-' + key + '-pct');
+      var cnt  = document.getElementById('bar-' + key + '-count');
+      if (bar) {
+        bar.style.width = (v * 100).toFixed(1) + '%';
+        bar.className = 'h-full rounded-full transition-all duration-700 ' + barColor(v);
+      }
+      if (pct)  pct.textContent  = (v * 100).toFixed(0) + '%';
+      if (cnt && count !== null) cnt.textContent = count + (countSuffix || '');
+    }
+
+    // Get public test counts from last run_tests in trajectory
+    var testRuns = STEPS.filter(function(s) { return s.tool === 'run_tests'; });
+    var lastTest = testRuns.length ? testRuns[testRuns.length-1] : null;
+    var pubCount = lastTest ? lastTest.passed + '/' + lastTest.total : null;
+
+    // Get lint error count from last run_lint in trajectory
+    var lintRuns = STEPS.filter(function(s) { return s.tool === 'run_lint'; });
+    var lastLint = lintRuns.length ? lintRuns[lintRuns.length-1] : null;
+    var lintCount = lastLint ? ((lastLint.errors || []).length === 0 ? 'clean' : (lastLint.errors.length) + ' err') : null;
+
+    setBar('public',  pubCount,  '');
+    setBar('private', null,      '');
+    setBar('lint',    lintCount, '');
   }
 
-  // ── CODE CHANGES ──────────────────────────────────────────────────────
+  // ── TIMELINE TAB ─────────────────────────────────────────────────────
+  function buildTimeline() {
+    if (!STEPS.length) {
+      document.getElementById('pane-timeline').innerHTML =
+        '<p class="text-sm text-gray-400">No steps recorded.</p>';
+      return;
+    }
+
+    // Group steps into LLM turns + their tool calls
+    var turns = [];
+    var i = 0;
+    while (i < STEPS.length) {
+      if (STEPS[i].tool === 'llm_invoke') {
+        var turn = { llm: STEPS[i], tools: [], idx: i };
+        i++;
+        while (i < STEPS.length && STEPS[i].tool !== 'llm_invoke') {
+          turn.tools.push({ step: STEPS[i], idx: i });
+          i++;
+        }
+        turns.push(turn);
+      } else { i++; }
+    }
+
+    var html = '<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 px-6 py-5">';
+
+    turns.forEach(function(turn, ti) {
+      var llm = turn.llm;
+      var nextTs = ti + 1 < turns.length ? turns[ti+1].llm.timestamp : STEPS[STEPS.length-1].timestamp;
+      var dur = (nextTs - llm.timestamp).toFixed(1) + 's';
+      var hasTools = turn.tools.length > 0;
+      var detailId = 'tl-llm-' + ti;
+
+      // LLM turn row
+      html += '<div class="relative">';
+
+      // Vertical connector from previous turn
+      if (ti > 0) {
+        html += '<div class="absolute left-[9px] top-0 w-0.5 h-4 bg-gray-200 dark:bg-gray-700"></div>';
+      }
+
+      html += '<div class="flex items-start gap-3 py-3 group cursor-pointer" onclick="toggleTimelineLlm(\'' + detailId + '\')">';
+      // Dot
+      html += '<div class="w-[18px] h-[18px] rounded-full bg-blue-600 border-2 border-white dark:border-gray-900 shadow-sm shrink-0 mt-0.5 z-10 relative"></div>';
+      // Content
+      html += '<div class="flex-1 min-w-0 flex items-center justify-between gap-2">';
+      html += '<div class="flex items-center gap-2 flex-wrap">';
+      html += '<span class="text-xs text-gray-400 tabular-nums">' + fmt(llm.timestamp) + '</span>';
+      html += '<span class="text-sm font-semibold text-gray-800 dark:text-gray-200">LLM Turn ' + (ti+1) + '</span>';
+      if (hasTools) {
+        html += '<span class="text-xs text-gray-400">→ ' + turn.tools.map(function(t){return t.step.tool.replace(/_/g,' ');}).join(', ') + '</span>';
+      }
+      html += '</div>';
+      html += '<span class="text-xs text-gray-400 tabular-nums shrink-0">' + dur + '</span>';
+      html += '</div></div>'; // close content flex + outer flex
+
+      // LLM detail (collapsible)
+      var llmText = (llm.text || '').trim();
+      var llmCalls = llm.tool_calls || [];
+      if (llmText || llmCalls.length) {
+        html += '<div id="' + detailId + '" class="hidden ml-8 mb-2 p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg text-xs">';
+        if (llmText) {
+          html += '<p class="text-gray-600 dark:text-gray-400 whitespace-pre-wrap mb-2">' + esc(llmText.slice(0,400)) + (llmText.length > 400 ? '…' : '') + '</p>';
+        }
+        llmCalls.forEach(function(tc) {
+          html += '<div class="font-mono text-blue-600 dark:text-blue-400">' + esc(tc.name) + '</div>';
+          if (tc.args && Object.keys(tc.args).length) {
+            html += '<pre class="text-gray-500 dark:text-gray-500 mt-0.5 mb-1">' + esc(JSON.stringify(tc.args, null, 2).slice(0,300)) + '</pre>';
+          }
+        });
+        html += '</div>';
+      }
+
+      // Tool children
+      if (hasTools) {
+        // Vertical line through tools
+        html += '<div class="ml-[8px] pl-5 border-l border-gray-200 dark:border-gray-700 pb-3 space-y-0.5">';
+        turn.tools.forEach(function(t, ii) {
+          var s = t.step;
+          var isLast = ii === turn.tools.length - 1;
+          var toolDetailId = 'tl-tool-' + ti + '-' + ii;
+          var tagColor = TOOL_TAG_COLORS[s.tool] || 'text-gray-500';
+
+          html += '<div>';
+          html += '<div class="flex items-start gap-2 py-1.5 px-2 -mx-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer" onclick="toggleTimelineTool(\'' + toolDetailId + '\')">';
+          html += '<span class="text-gray-300 dark:text-gray-600 text-xs font-mono mt-0.5 w-3 shrink-0">' + (isLast ? '└' : '├') + '</span>';
+          html += '<span class="text-sm shrink-0">' + (ICONS[s.tool] || '○') + '</span>';
+          html += '<div class="flex-1 min-w-0 flex items-center gap-2 flex-wrap">';
+          html += '<span class="text-xs font-mono font-semibold ' + tagColor + '">' + esc(s.tool) + '</span>';
+          html += '<span class="text-sm text-gray-600 dark:text-gray-400 truncate">' + stepSummary(s) + '</span>';
+          html += '</div>';
+          html += '<span class="text-xs text-gray-300 dark:text-gray-600 tabular-nums shrink-0">' + fmt(s.timestamp) + '</span>';
+          html += '</div>'; // hover row
+
+          // Tool detail
+          var toolDetail = buildToolDetail(s, ti, ii);
+          if (toolDetail) {
+            html += '<div id="' + toolDetailId + '" class="hidden ml-6 mb-1 p-3 bg-gray-50 dark:bg-gray-800/60 rounded-lg text-xs font-mono">';
+            html += toolDetail;
+            html += '</div>';
+          }
+          html += '</div>'; // outer div
+        });
+        html += '</div>'; // border-l container
+      }
+
+      html += '</div>'; // relative
+    });
+
+    // Done node
+    var lastTs = STEPS[STEPS.length-1].timestamp;
+    html += '<div class="relative">';
+    html += '<div class="absolute left-[9px] top-0 w-0.5 h-4 bg-gray-200 dark:bg-gray-700"></div>';
+    html += '<div class="flex items-center gap-3 py-3">';
+    html += '<div class="w-[18px] h-[18px] rounded-full bg-green-500 border-2 border-white dark:border-gray-900 shadow-sm shrink-0 z-10 relative flex items-center justify-center">';
+    html += '<svg viewBox="0 0 10 10" class="w-2.5 h-2.5 fill-white"><path d="M1.5 5l2.5 2.5 4.5-4.5" stroke="white" stroke-width="1.5" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+    html += '</div>';
+    html += '<span class="text-xs text-gray-400 tabular-nums">' + fmt(lastTs) + '</span>';
+    html += '<span class="text-sm font-medium text-green-600 dark:text-green-400">Episode complete</span>';
+    html += '</div></div>';
+
+    html += '</div>'; // card
+    document.getElementById('pane-timeline').innerHTML = html;
+  }
+
+  function buildToolDetail(s, ti, ii) {
+    if (s.tool === 'run_tests') {
+      if (!s.cases || !s.cases.length) return '';
+      return (s.cases || []).map(function(c) {
+        return '<div class="py-0.5">' + (c.passed ? '✅' : '❌') + ' <span class="' + (c.passed ? 'text-gray-600 dark:text-gray-400' : 'text-red-500') + '">' + esc(c.name.split('::').pop()) + '</span>' +
+          (c.error ? '<div class="text-red-400 mt-0.5 ml-4 whitespace-pre-wrap">' + esc(c.error.split('\n')[0]) + '</div>' : '') + '</div>';
+      }).join('');
+    }
+    if (s.tool === 'run_lint') {
+      if (!s.errors || !s.errors.length) return '<span class="text-green-500">✓ clean</span>';
+      return s.errors.map(function(e) {
+        return '<div class="text-red-400">' + esc(e.path) + ':' + e.line + ' <span class="text-amber-400">' + esc(e.code) + '</span> ' + esc(e.message) + '</div>';
+      }).join('');
+    }
+    if (s.tool === 'list_files' && s.files) {
+      return s.files.map(function(f) { return '<div class="text-gray-500">' + esc(f) + '</div>'; }).join('');
+    }
+    return '';
+  }
+
+  window.toggleTimelineLlm = function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden');
+  };
+  window.toggleTimelineTool = function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden');
+  };
+
+  // ── CODE CHANGES TAB ─────────────────────────────────────────────────
+  var _diffSideBySide = true;
+
+  function renderDiffs() {
+    var writes = STEPS.filter(function(s) { return s.tool === 'write_file' && s.diff; });
+    writes.forEach(function(s, i) {
+      var el = document.getElementById('diff-' + i);
+      if (!el) return;
+      el.innerHTML = '';
+      new Diff2HtmlUI(el, s.diff, {
+        drawFileList: false,
+        matching: 'lines',
+        outputFormat: _diffSideBySide ? 'side-by-side' : 'line-by-line',
+        highlight: true,
+      }).draw();
+    });
+  }
+
   function buildCode() {
     var writes = STEPS.filter(function(s) { return s.tool === 'write_file' && s.diff; });
     if (!writes.length) {
@@ -172,149 +465,230 @@
       return;
     }
 
-    var html = '';
+    // Group by file path for sidebar
+    var fileOrder = [];
+    var fileIndexes = {};
     writes.forEach(function(s, i) {
-      var divId = 'diff-' + i;
-      html += '<div class="mb-6">' +
-        '<p class="text-sm font-mono font-medium text-gray-700 dark:text-gray-300 mb-2">' + esc(s.path) +
-        ' <span class="text-xs text-gray-400">' + fmt(s.timestamp) + '</span></p>' +
-        '<div id="' + divId + '"></div>' +
-        '</div>';
+      if (!fileIndexes[s.path]) { fileIndexes[s.path] = []; fileOrder.push(s.path); }
+      fileIndexes[s.path].push(i);
     });
-    document.getElementById('pane-code').innerHTML = html;
 
-    writes.forEach(function(s, i) {
-      var el = document.getElementById('diff-' + i);
-      var ui = new Diff2HtmlUI(el, s.diff, {
-        drawFileList: false,
-        matching: 'lines',
-        outputFormat: 'line-by-line',
-        highlight: true,
-      });
-      ui.draw();
+    // Sidebar
+    var sidebar = '<div class="w-44 shrink-0 border-r border-gray-200 dark:border-gray-800 p-3 overflow-y-auto">';
+    sidebar += '<p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Files (' + fileOrder.length + ')</p>';
+    fileOrder.forEach(function(path) {
+      var idxs = fileIndexes[path];
+      var parts = path.replace(/\\/g,'/').split('/');
+      var name  = parts.pop();
+      var dir   = parts.join('/');
+      sidebar += '<button onclick="scrollToDiff(' + idxs[0] + ')" class="w-full text-left px-2 py-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors mb-0.5 group">';
+      if (dir) sidebar += '<div class="text-xs text-gray-400 truncate leading-none mb-0.5">' + esc(dir) + '/</div>';
+      sidebar += '<div class="flex items-center justify-between gap-1">';
+      sidebar += '<span class="text-sm font-mono text-gray-700 dark:text-gray-300 truncate">' + esc(name) + '</span>';
+      if (idxs.length > 1) {
+        sidebar += '<span class="text-xs bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 px-1.5 py-0.5 rounded-full shrink-0">' + idxs.length + '</span>';
+      }
+      sidebar += '</div></button>';
     });
+    sidebar += '</div>';
+
+    // Diffs pane
+    var diffPane = '<div class="flex-1 min-w-0 p-4 overflow-x-auto">';
+    diffPane += '<div class="flex justify-end mb-3"><button id="diff-toggle" onclick="toggleDiffFormat()" class="px-3 py-1.5 text-xs font-medium rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors">' + (_diffSideBySide ? 'Unified' : 'Side-by-side') + '</button></div>';
+    writes.forEach(function(s, i) {
+      diffPane += '<div id="diff-wrap-' + i + '" class="mb-8">';
+      diffPane += '<p class="text-sm font-mono font-medium text-gray-700 dark:text-gray-300 mb-2">' + esc(s.path) +
+        ' <span class="text-xs text-gray-400">' + fmt(s.timestamp) + '</span></p>';
+      diffPane += '<div id="diff-' + i + '"></div>';
+      diffPane += '</div>';
+    });
+    diffPane += '</div>';
+
+    document.getElementById('pane-code').innerHTML =
+      '<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden flex" style="min-height:400px">' +
+      sidebar + diffPane + '</div>';
+
+    renderDiffs();
   }
 
-  // ── TEST RESULTS ──────────────────────────────────────────────────────
+  window.toggleDiffFormat = function() {
+    _diffSideBySide = !_diffSideBySide;
+    var btn = document.getElementById('diff-toggle');
+    if (btn) btn.textContent = _diffSideBySide ? 'Unified' : 'Side-by-side';
+    renderDiffs();
+  };
+  window.scrollToDiff = function(idx) {
+    var el = document.getElementById('diff-wrap-' + idx);
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
+  // ── TEST RESULTS TAB ─────────────────────────────────────────────────
   function buildTests() {
-    var runs = STEPS.filter(function(s) { return s.tool === 'run_tests'; });
-    if (!runs.length) {
+    var testRuns = STEPS.filter(function(s) { return s.tool === 'run_tests'; });
+    if (!testRuns.length) {
       document.getElementById('pane-tests').innerHTML =
         '<p class="text-sm text-gray-400 dark:text-gray-500">No test runs recorded.</p>';
       return;
     }
 
-    var html = runs.map(function(s, i) {
-      var passRate = s.total ? Math.round((s.passed / s.total) * 100) : 0;
-      var barColor = passRate === 100 ? 'bg-green-500' : passRate > 50 ? 'bg-yellow-500' : 'bg-red-500';
+    var lastRun = testRuns[testRuns.length-1];
+    var passRate = lastRun.total ? Math.round((lastRun.passed / lastRun.total) * 100) : 0;
+    var allPass  = lastRun.passed === lastRun.total && lastRun.total > 0;
+    var barCls   = allPass ? 'bg-green-500' : passRate > 50 ? 'bg-yellow-500' : 'bg-red-500';
 
-      var cases = (s.cases || []).map(function(c) {
-        var icon = c.passed ? '✅' : '❌';
-        var row = '<tr class="border-b border-gray-100 dark:border-gray-800">' +
-          '<td class="px-3 py-2 text-xs">' + icon + '</td>' +
-          '<td class="px-3 py-2 text-xs font-mono text-gray-700 dark:text-gray-300">' + esc(c.name) + '</td>' +
-          '</tr>';
-        if (!c.passed && c.error) {
-          row += '<tr class="border-b border-gray-100 dark:border-gray-800 bg-red-50 dark:bg-red-900/10">' +
-            '<td></td><td class="px-3 py-2"><pre class="text-xs text-red-500 whitespace-pre-wrap">' + esc(c.error) + '</pre></td>' +
-            '</tr>';
+    var html = '<div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">';
+
+    // Summary row
+    html += '<div class="flex items-center gap-4 mb-6">';
+    html += '<span class="text-2xl">' + (allPass ? '✅' : '❌') + '</span>';
+    html += '<div class="flex-1">';
+    html += '<p class="text-base font-semibold text-gray-800 dark:text-gray-200 mb-1">' + lastRun.passed + '/' + lastRun.total + ' Tests Passed</p>';
+    html += '<div class="flex items-center gap-3">';
+    html += '<div class="flex-1 h-2 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">';
+    html += '<div class="h-full rounded-full ' + barCls + '" style="width:' + passRate + '%"></div>';
+    html += '</div>';
+    html += '<span class="text-sm font-semibold tabular-nums ' + (allPass ? 'text-green-600' : 'text-gray-500') + '">' + passRate + '%</span>';
+    html += '</div></div></div>';
+
+    // Test case cards
+    if (lastRun.cases && lastRun.cases.length) {
+      html += '<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3 mb-6">';
+      lastRun.cases.forEach(function(c, i) {
+        var passed = c.passed;
+        var shortName = c.name.split('::').pop().replace(/^test_/,'').replace(/_/g,' ');
+        var borderCls = passed
+          ? 'border-green-200 dark:border-green-900/50 bg-green-50/50 dark:bg-green-900/10'
+          : 'border-red-200 dark:border-red-900/50 bg-red-50/50 dark:bg-red-900/10';
+        var cardId = 'tc-' + i;
+
+        html += '<div class="rounded-xl border ' + borderCls + ' p-3 ' + (!passed && c.error ? 'cursor-pointer' : '') + '" ' +
+          (!passed && c.error ? 'onclick="toggleTestCard(\'' + cardId + '\')"' : '') + '>';
+        html += '<div class="flex items-start justify-between gap-2">';
+        html += '<span class="text-xs text-gray-600 dark:text-gray-400 font-mono leading-tight break-words">' + esc(shortName) + '</span>';
+        html += '<span class="text-base shrink-0">' + (passed ? '✅' : '❌') + '</span>';
+        html += '</div>';
+        if (!passed && c.error) {
+          html += '<div id="' + cardId + '" class="hidden mt-2 pt-2 border-t border-red-200 dark:border-red-900/40 text-xs text-red-600 dark:text-red-400 font-mono whitespace-pre-wrap break-all">' +
+            esc(c.error.split('\n').filter(function(l){return l.trim();}).slice(-3).join('\n')) + '</div>';
         }
-        return row;
-      }).join('');
+        html += '</div>';
+      });
+      html += '</div>';
+    }
 
-      return '<div class="mb-6 bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden">' +
-        '<div class="px-4 py-3 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">' +
-        '<span class="text-sm font-medium text-gray-800 dark:text-gray-200">Run ' + (i + 1) +
-        ' <span class="text-xs text-gray-400 font-normal ml-1">' + fmt(s.timestamp) + '</span></span>' +
-        '<span class="text-sm font-medium ' + (passRate === 100 ? 'text-green-600' : 'text-gray-600 dark:text-gray-400') + '">' +
-        s.passed + '/' + s.total + ' passed</span>' +
-        '</div>' +
-        '<div class="h-1.5 bg-gray-100 dark:bg-gray-800"><div class="h-full ' + barColor + '" style="width:' + passRate + '%"></div></div>' +
-        '<table class="w-full"><tbody>' + cases + '</tbody></table>' +
-        '</div>';
-    }).join('');
+    // Run history (if multiple runs)
+    if (testRuns.length > 1) {
+      html += '<div class="border-t border-gray-100 dark:border-gray-800 pt-5">';
+      html += '<p class="text-xs font-semibold text-gray-400 dark:text-gray-500 uppercase tracking-wider mb-3">Run History</p>';
+      html += '<div class="space-y-2">';
+      testRuns.forEach(function(r, i) {
+        var p   = r.total ? Math.round((r.passed / r.total) * 100) : 0;
+        var cls = p === 100 ? 'bg-green-500' : p > 50 ? 'bg-yellow-500' : 'bg-red-500';
+        var isLast = i === testRuns.length - 1;
+        html += '<div class="flex items-center gap-3 ' + (isLast ? 'opacity-100' : 'opacity-60') + '">';
+        html += '<span class="text-xs text-gray-400 tabular-nums w-6 text-right">#' + (i+1) + '</span>';
+        html += '<span class="text-xs text-gray-400 tabular-nums">' + fmt(r.timestamp) + '</span>';
+        html += '<div class="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">';
+        html += '<div class="h-full rounded-full ' + cls + '" style="width:' + p + '%"></div></div>';
+        html += '<span class="text-xs text-gray-500 tabular-nums">' + r.passed + '/' + r.total + '</span>';
+        html += '</div>';
+      });
+      html += '</div></div>';
+    }
 
+    html += '</div>';
     document.getElementById('pane-tests').innerHTML = html;
   }
 
-  // ── AGENT LOG ────────────────────────────────────────────────────────
+  window.toggleTestCard = function(id) {
+    var el = document.getElementById(id);
+    if (el) el.classList.toggle('hidden');
+  };
+
+  // ── AGENT LOG TAB ────────────────────────────────────────────────────
   function buildLog() {
     var items = STEPS.map(function(s, i) {
-      var isLlm = s.tool === 'llm_invoke';
-      var summary = stepSummary(s);
-      var detailId = 'log-detail-' + i;
-
-      var detail = '';
-      if (s.tool === 'llm_invoke') {
-        var tcHtml = (s.tool_calls || []).map(function(tc) {
-          return '<div class="mb-1"><span class="font-mono text-xs text-blue-600 dark:text-blue-400">' +
-            esc(tc.name) + '</span>' +
-            '<pre class="text-xs text-gray-500 dark:text-gray-400 mt-0.5">' + esc(JSON.stringify(tc.args, null, 2)) + '</pre></div>';
-        }).join('');
-        var textHtml = s.text ? '<p class="text-xs text-gray-600 dark:text-gray-400 mt-2 whitespace-pre-wrap">' + esc(s.text) + '</p>' : '';
-        detail = tcHtml + textHtml;
-      } else if (s.tool === 'write_file' && s.diff) {
-        detail = '<div id="log-diff-' + i + '"></div>';
-      } else if (s.tool === 'run_tests') {
-        detail = (s.cases || []).map(function(c) {
-          return '<div class="text-xs py-0.5">' + (c.passed ? '✅' : '❌') + ' <span class="font-mono">' + esc(c.name) + '</span>' +
-            (c.error ? '<pre class="text-red-500 mt-0.5 whitespace-pre-wrap">' + esc(c.error) + '</pre>' : '') + '</div>';
-        }).join('');
-      } else if (s.tool === 'run_lint') {
-        detail = (s.errors && s.errors.length)
-          ? s.errors.map(function(e) {
-              return '<div class="text-xs font-mono text-red-500">' + esc(e.path) + ':' + e.line + ' ' + esc(e.code) + ' ' + esc(e.message) + '</div>';
-            }).join('')
-          : '<span class="text-xs text-green-600">Clean</span>';
-      }
-
+      var tagColor = TOOL_TAG_COLORS[s.tool] || 'text-gray-400';
+      var detail   = buildLogDetail(s, i);
       var hasDetail = !!detail;
-      return '<div class="border-b border-gray-100 dark:border-gray-800 last:border-0">' +
-        '<button onclick="toggleLog(' + i + ')" ' +
-        'class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 dark:hover:bg-gray-800/40 ' +
-        (hasDetail ? 'cursor-pointer' : 'cursor-default') + '">' +
-        '<span class="text-gray-400 text-xs w-10 shrink-0">' + fmt(s.timestamp) + '</span>' +
-        '<span class="text-sm">' + (ICONS[s.tool] || '') + '</span>' +
-        '<span class="text-xs font-mono text-gray-500 dark:text-gray-400 w-24 shrink-0">' + esc(s.tool) + '</span>' +
-        '<span class="text-sm text-gray-700 dark:text-gray-300 flex-1">' + summary + '</span>' +
-        (hasDetail ? '<span id="log-arrow-' + i + '" class="text-gray-400 text-xs ml-2">▶</span>' : '') +
+
+      return '<div class="border-b border-gray-800 last:border-0">' +
+        '<button onclick="toggleLog(' + i + ')" class="w-full flex items-start gap-3 px-4 py-2.5 text-left ' +
+        (hasDetail ? 'hover:bg-gray-800/60 cursor-pointer' : 'cursor-default') + '">' +
+        '<span class="text-gray-600 text-xs font-mono mt-0.5 w-10 shrink-0 tabular-nums">' + fmt(s.timestamp) + '</span>' +
+        '<span class="text-xs font-mono font-bold ' + tagColor + ' w-24 shrink-0 mt-0.5">' + esc(s.tool) + '</span>' +
+        '<span class="text-sm text-gray-300 flex-1 min-w-0 truncate">' + stepSummary(s) + '</span>' +
+        (hasDetail ? '<span id="log-arrow-' + i + '" class="text-gray-600 text-xs ml-2 shrink-0">▶</span>' : '') +
         '</button>' +
-        (hasDetail ? '<div id="' + detailId + '" class="hidden px-4 pb-3 pt-1 bg-gray-50 dark:bg-gray-800/40">' + detail + '</div>' : '') +
+        (hasDetail ? '<div id="log-detail-' + i + '" class="hidden px-4 pb-3 pt-1 bg-gray-900 border-t border-gray-800">' + detail + '</div>' : '') +
         '</div>';
     }).join('');
 
     document.getElementById('pane-log').innerHTML =
-      '<div class="rounded-xl border border-gray-200 dark:border-gray-800 overflow-hidden bg-white dark:bg-gray-900">' +
+      '<div class="rounded-xl border border-gray-800 overflow-hidden bg-gray-950 font-mono">' +
       items + '</div>';
 
-    // Render any diffs in the log
+    // Render diffs inside log
     STEPS.forEach(function(s, i) {
       if (s.tool === 'write_file' && s.diff) {
         var el = document.getElementById('log-diff-' + i);
         if (el) {
-          var ui = new Diff2HtmlUI(el, s.diff, {
+          new Diff2HtmlUI(el, s.diff, {
             drawFileList: false, outputFormat: 'line-by-line', highlight: true,
-          });
-          ui.draw();
+          }).draw();
         }
       }
     });
   }
 
+  function buildLogDetail(s, i) {
+    if (s.tool === 'llm_invoke') {
+      var tc = (s.tool_calls || []).map(function(c) {
+        return '<div class="mb-2"><span class="text-blue-400 font-bold">' + esc(c.name) + '</span>' +
+          (Object.keys(c.args||{}).length ? '<pre class="text-gray-500 mt-0.5 text-xs whitespace-pre-wrap">' + esc(JSON.stringify(c.args, null, 2).slice(0,500)) + '</pre>' : '') +
+          '</div>';
+      }).join('');
+      var txt = s.text ? '<p class="text-gray-500 mt-2 text-xs whitespace-pre-wrap">' + esc(s.text.slice(0,600)) + (s.text.length > 600 ? '…' : '') + '</p>' : '';
+      return tc || txt ? tc + txt : null;
+    }
+    if (s.tool === 'write_file' && s.diff) {
+      return '<div id="log-diff-' + i + '" class="text-xs"></div>';
+    }
+    if (s.tool === 'run_tests') {
+      if (!s.cases || !s.cases.length) return null;
+      return s.cases.map(function(c) {
+        return '<div class="text-xs py-0.5">' +
+          (c.passed ? '<span class="text-green-400">✓</span>' : '<span class="text-red-400">✗</span>') +
+          ' <span class="' + (c.passed ? 'text-gray-400' : 'text-red-400') + '">' + esc(c.name.split('::').pop()) + '</span>' +
+          (c.error ? '<pre class="text-red-500 mt-0.5 ml-4 text-xs whitespace-pre-wrap">' + esc(c.error.split('\n').slice(0,5).join('\n')) + '</pre>' : '') +
+          '</div>';
+      }).join('');
+    }
+    if (s.tool === 'run_lint') {
+      if (!s.errors || !s.errors.length) return '<span class="text-green-400 text-xs">✓ clean</span>';
+      return s.errors.map(function(e) {
+        return '<div class="text-xs"><span class="text-gray-500">' + esc(e.path) + ':' + e.line + '</span> <span class="text-amber-400">' + esc(e.code) + '</span> <span class="text-red-400">' + esc(e.message) + '</span></div>';
+      }).join('');
+    }
+    return null;
+  }
+
   window.toggleLog = function(i) {
-    var detail = document.getElementById('log-detail-' + i);
-    var arrow  = document.getElementById('log-arrow-' + i);
-    if (!detail) return;
-    var hidden = detail.classList.toggle('hidden');
-    if (arrow) arrow.textContent = hidden ? '▶' : '▼';
+    var d = document.getElementById('log-detail-' + i);
+    var a = document.getElementById('log-arrow-' + i);
+    if (!d) return;
+    var hidden = d.classList.toggle('hidden');
+    if (a) a.textContent = hidden ? '▶' : '▼';
   };
 
-  // ── init ──────────────────────────────────────────────────────────────
-  buildOverview();
+  // ── INIT ─────────────────────────────────────────────────────────────
+  initHeader();
+  buildTimeline();
   buildCode();
   buildTests();
   buildLog();
-  switchTab('overview');
+  switchTab('timeline');
+
 })();
 </script>
 {% endif %}

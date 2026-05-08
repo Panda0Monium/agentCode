@@ -1,26 +1,63 @@
 <!DOCTYPE html>
-<html lang="en" class="">
+<html lang="en" data-theme="{{ theme }}">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AgentCode{% block title_suffix %}{% endblock %}</title>
 
-  <script>tailwind.config = { darkMode: 'class' };</script>
+  <!-- Sync .dark class from data-theme before render (no flash) -->
+  <script>
+    if (document.documentElement.dataset.theme === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+  </script>
+
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>tailwind.config = { darkMode: 'class' };</script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 
-  <!-- Apply saved theme before body renders to prevent flash -->
-  <script>
-    (function () {
-      if (localStorage.getItem('theme') === 'dark') {
-        document.documentElement.classList.add('dark');
-      }
-    })();
-  </script>
+  <style>
+    /* ════════════════════════════════════════════════════════════
+       THEMES
+       Each block defines all colors for that theme in one place.
+       Add new themes by copying a block and changing the values.
+    ════════════════════════════════════════════════════════════ */
+
+    [data-theme="light"] {
+      --accent:          #3b82f6;   /* primary buttons, links, active states */
+      --accent-hover:    #2563eb;
+      --accent-light:    #eff6ff;   /* badge / chip background */
+      --accent-text:     #1d4ed8;   /* text on accent-light bg */
+      --secondary:       #f59e0b;   /* sign-up button */
+      --secondary-hover: #d97706;
+    }
+
+    [data-theme="dark"] {
+      --accent:          #60a5fa;   /* lighter blue reads better on dark */
+      --accent-hover:    #93c5fd;
+      --accent-light:    #172554;   /* dark tint for badges */
+      --accent-text:     #93c5fd;
+      --secondary:       #fbbf24;
+      --secondary-hover: #f59e0b;
+    }
+
+    /* ── Propagate accent to every blue Tailwind class the app uses ── */
+    .bg-blue-600, .bg-blue-500, .bg-blue-400 { background-color: var(--accent)       !important; }
+    .hover\:bg-blue-700:hover                 { background-color: var(--accent-hover) !important; }
+    .text-blue-600, .text-blue-400,
+    .dark\:text-blue-400                      { color: var(--accent)                  !important; }
+    .border-blue-600, .dark\:border-blue-400  { border-color: var(--accent)           !important; }
+    .bg-blue-100, .dark\:bg-blue-900\/40      { background-color: var(--accent-light) !important; }
+    .text-blue-700, .dark\:text-blue-300      { color: var(--accent-text)             !important; }
+    .focus\:ring-blue-500:focus               { --tw-ring-color: var(--accent); }
+
+    /* ── Secondary ── */
+    .bg-amber-500                        { background-color: var(--secondary)       !important; }
+    .hover\:bg-amber-600:hover           { background-color: var(--secondary-hover) !important; }
+  </style>
 </head>
 
-<body class="min-h-screen bg-gray-50 text-gray-900 font-sans transition-colors duration-200
-             dark:bg-gray-950 dark:text-gray-100">
+<body class="min-h-screen bg-gray-50 text-gray-900 font-sans dark:bg-gray-950 dark:text-gray-100">
 
   <nav class="bg-white border-b border-gray-200 dark:bg-gray-900 dark:border-gray-800">
     <div class="max-w-6xl mx-auto px-6 h-14 flex items-center justify-between">
@@ -36,35 +73,17 @@
       </a>
 
       <div class="flex items-center gap-3">
-        <button id="theme-toggle" aria-label="Toggle theme"
-                class="p-2 rounded-lg text-gray-400 hover:text-gray-700 hover:bg-gray-100
-                       dark:hover:text-gray-200 dark:hover:bg-gray-800 transition-colors">
-          <svg id="icon-moon" class="w-5 h-5 block dark:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M20.354 15.354A9 9 0 0 1 8.646 3.646 9.003 9.003 0 0 0 12 21a9.003 9.003 0 0 0 8.354-5.646z"/>
-          </svg>
-          <svg id="icon-sun" class="w-5 h-5 hidden dark:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364-6.364-.707.707M6.343 17.657l-.707.707
-                     M17.657 17.657l-.707-.707M6.343 6.343l-.707-.707M12 8a4 4 0 1 0 0 8 4 4 0 0 0 0-8z"/>
-          </svg>
-        </button>
-
         {% if user.is_authenticated %}
           <a href="{% url 'run_history' %}"
-             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400
-                    dark:hover:text-white transition-colors">My Runs</a>
+             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">My Runs</a>
           <a href="{% url 'model_config' %}"
-             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400
-                    dark:hover:text-white transition-colors">Settings</a>
+             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Settings</a>
           <span class="text-sm text-gray-400 dark:text-gray-500">{{ user.email }}</span>
           <a href="{% url 'account_logout' %}"
-             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400
-                    dark:hover:text-white transition-colors">Sign Out</a>
+             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Sign Out</a>
         {% else %}
           <a href="{% url 'account_login' %}"
-             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400
-                    dark:hover:text-white transition-colors">Sign In</a>
+             class="text-sm text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white transition-colors">Sign In</a>
           <a href="{% url 'account_signup' %}"
              class="text-sm px-4 py-1.5 rounded-md bg-amber-500 text-white font-medium
                     hover:bg-amber-600 transition-colors">Sign Up</a>
@@ -76,19 +95,6 @@
   <main class="max-w-6xl mx-auto px-6 py-8">
     {% block content %}{% endblock %}
   </main>
-
-  <script>
-    document.getElementById('theme-toggle').addEventListener('click', function () {
-      var html = document.documentElement;
-      if (html.classList.contains('dark')) {
-        html.classList.remove('dark');
-        localStorage.setItem('theme', 'light');
-      } else {
-        html.classList.add('dark');
-        localStorage.setItem('theme', 'dark');
-      }
-    });
-  </script>
 
   {% block extra_scripts %}{% endblock %}
 </body>

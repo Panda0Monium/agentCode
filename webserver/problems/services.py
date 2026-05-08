@@ -14,6 +14,23 @@ def _load_problem(problem_id: int, task_dir: Path) -> dict:
     instruction = data.get("instruction", "")
     short_description = instruction.strip().splitlines()[0][:120] if instruction else ""
 
+    stub_files = []
+    repo_dir = task_dir / "repo"
+    if repo_dir.exists():
+        for p in sorted(repo_dir.rglob("*.py")):
+            rel_parts = p.relative_to(repo_dir).parts
+            if any(part in ("__pycache__", "tests") or part.startswith("test_") for part in rel_parts):
+                continue
+            try:
+                content = p.read_text(encoding="utf-8")
+                if content.strip():
+                    stub_files.append({
+                        "path": "/".join(rel_parts),
+                        "content": content,
+                    })
+            except Exception:
+                pass
+
     return {
         "id": problem_id,
         "name": name,
@@ -24,6 +41,7 @@ def _load_problem(problem_id: int, task_dir: Path) -> dict:
         "instruction": instruction,
         "timeout_sec": data.get("timeout_sec", 60),
         "dataset": task_dir.parent.name,
+        "stub_files": stub_files,
     }
 
 
