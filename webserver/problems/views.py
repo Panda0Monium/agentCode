@@ -31,6 +31,10 @@ class ProblemDetailTemplateView(TemplateView):
             raise Http404("Problem not found")
         ctx["problem"] = problem
         ctx["instruction_json"] = mark_safe(json.dumps(problem["instruction"]))
+        ctx["problem_meta_json"] = mark_safe(json.dumps({
+            "task_name": f"{problem['dataset']}/{problem['name']}",
+            "dataset":   problem["dataset"],
+        }))
         return ctx
 
 
