@@ -19,3 +19,13 @@ class ModelConfigForm(forms.ModelForm):
             'model_name':    'Model ID as recognised by the provider.',
             'model_api_key': 'Stored in plaintext — use a dedicated key, not your main account password.',
         }
+
+
+class HFModelConfigForm(forms.ModelForm):
+    class Meta:
+        model = User
+        fields = ['model_name']
+        labels = {'model_name': 'Model ID'}
+        help_texts = {
+            'model_name': 'HuggingFace model ID, e.g. Qwen/Qwen2.5-Coder-32B-Instruct',
+        }

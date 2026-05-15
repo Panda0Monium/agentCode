@@ -106,10 +106,13 @@
   </div>
   {% endif %}
 
-  {% if run.status == 'failed' and run.error %}
-  <div class="mt-4">
-    <p class="text-sm font-medium text-red-500 mb-2">Error</p>
-    <pre class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap">{{ run.error }}</pre>
+  {% if run.status == 'failed' %}
+  <div class="mt-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 px-4 py-3">
+    <p class="text-sm font-medium text-red-600 dark:text-red-400 mb-1">Run failed</p>
+    {% if run.error_summary %}
+      <p class="text-xs font-mono text-red-500 dark:text-red-400 mb-2">{{ run.error_summary }}</p>
+    {% endif %}
+    <p class="text-xs text-gray-500 dark:text-gray-400">Ref: <span class="font-mono">{{ run.uuid }}</span> — full details in <code>webserver/logs/runs.log</code></p>
   </div>
   {% endif %}
 

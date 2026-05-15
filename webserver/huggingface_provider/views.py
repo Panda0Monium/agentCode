@@ -25,5 +25,7 @@ class HuggingFaceOAuth2Adapter(OAuth2Adapter):
         return self.get_provider().sociallogin_from_response(request, resp.json())
 
 
+HuggingFaceProvider.oauth2_adapter_class = HuggingFaceOAuth2Adapter
+
 oauth2_login    = OAuth2LoginView.adapter_view(HuggingFaceOAuth2Adapter)
 oauth2_callback = OAuth2CallbackView.adapter_view(HuggingFaceOAuth2Adapter)

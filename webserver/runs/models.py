@@ -26,5 +26,12 @@ class Run(models.Model):
     started_at    = models.DateTimeField(null=True, blank=True)
     completed_at  = models.DateTimeField(null=True, blank=True)
 
+    @property
+    def error_summary(self):
+        if not self.error:
+            return ''
+        last = next((l for l in reversed(self.error.splitlines()) if l.strip()), '')
+        return last
+
     class Meta:
         ordering = ['-created_at']

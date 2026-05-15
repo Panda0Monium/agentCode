@@ -3,44 +3,141 @@
 
 {% block content %}
 <div class="max-w-md mx-auto mt-10">
-  <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-6">Sign Up</h1>
+  <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2 text-center">Welcome to AgentCode</h1>
+  <p class="text-sm text-gray-500 dark:text-gray-400 text-center mb-6">AI-powered coding benchmark platform</p>
 
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
-    <form method="post">
+
+    <!-- HuggingFace OAuth -->
+    <form method="post" action="{% url 'huggingface_login' %}">
       {% csrf_token %}
-      {% for field in form %}
-        <div class="mb-4">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {{ field.label }}
-          </label>
-          <input type="{{ field.field.widget.input_type }}"
-                 name="{{ field.html_name }}"
-                 id="{{ field.id_for_label }}"
-                 {% if field.value %}value="{{ field.value }}"{% endif %}
-                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
-                        text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
-                        dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
-          {% if field.errors %}
-            <p class="mt-1 text-xs text-red-500">{{ field.errors|join:", " }}</p>
-          {% endif %}
-        </div>
-      {% endfor %}
-
-      {% if form.non_field_errors %}
-        <p class="mb-4 text-sm text-red-500">{{ form.non_field_errors|join:", " }}</p>
-      {% endif %}
-
       <button type="submit"
-              class="w-full py-2 rounded-lg bg-amber-500 text-white text-sm font-medium
-                     hover:bg-amber-600 transition-colors">
-        Create Account
+              class="flex items-center justify-center gap-2.5 w-full py-2.5 rounded-lg
+                     bg-yellow-400 hover:bg-yellow-500 text-gray-900 text-sm font-semibold
+                     transition-colors mb-5">
+        <svg width="20" height="20" viewBox="0 0 95 88" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M47.4 5C24.9 5 6.7 23.2 6.7 45.7c0 16.2 9.5 30.3 23.4 37.1-.3-2.3-.1-4.9.6-7.3 1.3-4.4 8.5-36 8.5-36s-2.2-4.3-2.2-10.7c0-10 5.8-17.5 13-17.5 6.1 0 9.1 4.6 9.1 10.1 0 6.2-3.9 15.4-6 23.9-1.7 7.1 3.5 12.9 10.5 12.9 12.6 0 21.1-16.3 21.1-35.5 0-14.6-9.9-25.6-27.8-25.6-20.2 0-32.7 15.1-32.7 32 0 5.8 1.7 9.9 4.4 13.1.5.6.5 1.2.4 1.8-.4 1.8-1.4 5.7-1.6 6.5-.3 1-.8 1.3-1.9.8-8.7-3.6-12.8-13.3-12.8-24.2 0-19.9 16.7-43.6 49.7-43.6 26.6 0 44.1 19.3 44.1 40 0 27.3-15.1 47.7-37.4 47.7-7.5 0-14.5-4-16.9-8.6l-4.6 17.9c-1.4 5.5-5.2 12.4-7.7 16.6 5.8 1.8 12 2.7 18.4 2.7 22.5 0 40.7-18.2 40.7-40.7S69.9 5 47.4 5z" fill="#1a1a1a"/>
+        </svg>
+        Continue with Hugging Face
       </button>
     </form>
 
-    <p class="mt-4 text-center text-sm text-gray-500 dark:text-gray-400">
-      Already have an account?
-      <a href="{% url 'account_login' %}" class="text-blue-600 hover:underline dark:text-blue-400">Sign In</a>
-    </p>
+    <!-- Divider -->
+    <div class="flex items-center gap-3 mb-5">
+      <hr class="flex-1 border-gray-200 dark:border-gray-700">
+      <span class="text-xs text-gray-400">or use email</span>
+      <hr class="flex-1 border-gray-200 dark:border-gray-700">
+    </div>
+
+    <!-- Tab switcher -->
+    <div class="flex rounded-lg border border-gray-200 dark:border-gray-700 mb-5 p-0.5 bg-gray-50 dark:bg-gray-800">
+      <button id="tab-signin" onclick="switchTab('signin')"
+              class="flex-1 py-1.5 text-sm rounded-md transition-colors font-medium
+                     text-gray-500 dark:text-gray-400">
+        Sign In
+      </button>
+      <button id="tab-signup" onclick="switchTab('signup')"
+              class="flex-1 py-1.5 text-sm rounded-md transition-colors font-semibold
+                     bg-white dark:bg-gray-700 text-gray-900 dark:text-white shadow-sm">
+        Sign Up
+      </button>
+    </div>
+
+    <!-- Sign In form (hidden by default) -->
+    <div id="panel-signin" class="hidden">
+      <form method="post" action="{% url 'account_login' %}">
+        {% csrf_token %}
+
+        <div class="mb-4">
+          <label for="si_email" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <input type="email" name="login" id="si_email" autocomplete="email"
+                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                        text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                        dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+        </div>
+
+        <div class="mb-5">
+          <label for="si_password" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+          <input type="password" name="password" id="si_password" autocomplete="current-password"
+                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                        text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                        dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+        </div>
+
+        <button type="submit"
+                class="w-full py-2 rounded-lg bg-blue-600 text-white text-sm font-medium
+                       hover:bg-blue-700 transition-colors">
+          Sign In
+        </button>
+      </form>
+    </div>
+
+    <!-- Sign Up form (active by default) -->
+    <div id="panel-signup">
+      <form method="post" action="{% url 'account_signup' %}">
+        {% csrf_token %}
+
+        <div class="mb-4">
+          <label for="{{ form.email.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>
+          <input type="email" name="email" id="{{ form.email.id_for_label }}" autocomplete="email"
+                 {% if form.email.value %}value="{{ form.email.value }}"{% endif %}
+                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                        text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                        dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+          {% if form.email.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.email.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <div class="mb-4">
+          <label for="{{ form.password1.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Password</label>
+          <input type="password" name="password1" id="{{ form.password1.id_for_label }}" autocomplete="new-password"
+                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                        text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                        dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+          {% if form.password1.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.password1.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        <div class="mb-5">
+          <label for="{{ form.password2.id_for_label }}" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Confirm Password</label>
+          <input type="password" name="password2" id="{{ form.password2.id_for_label }}" autocomplete="new-password"
+                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                        text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                        dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+          {% if form.password2.errors %}
+            <p class="mt-1 text-xs text-red-500">{{ form.password2.errors|join:", " }}</p>
+          {% endif %}
+        </div>
+
+        {% if form.non_field_errors %}
+          <p class="mb-4 text-sm text-red-500">{{ form.non_field_errors|join:", " }}</p>
+        {% endif %}
+
+        <button type="submit"
+                class="w-full py-2 rounded-lg bg-amber-500 text-white text-sm font-medium
+                       hover:bg-amber-600 transition-colors">
+          Create Account
+        </button>
+      </form>
+    </div>
+
   </div>
 </div>
+
+<script>
+  const ACTIVE   = ['bg-white', 'dark:bg-gray-700', 'text-gray-900', 'dark:text-white', 'shadow-sm', 'font-semibold'];
+  const INACTIVE = ['text-gray-500', 'dark:text-gray-400', 'font-medium'];
+
+  function switchTab(tab) {
+    const panels  = { signin: document.getElementById('panel-signin'), signup: document.getElementById('panel-signup') };
+    const buttons = { signin: document.getElementById('tab-signin'),   signup: document.getElementById('tab-signup')   };
+    Object.entries(panels).forEach(([key, el]) => el.classList.toggle('hidden', key !== tab));
+    Object.entries(buttons).forEach(([key, btn]) => {
+      if (key === tab) { btn.classList.remove(...INACTIVE); btn.classList.add(...ACTIVE); }
+      else             { btn.classList.remove(...ACTIVE);   btn.classList.add(...INACTIVE); }
+    });
+  }
+</script>
 {% endblock %}
