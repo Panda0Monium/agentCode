@@ -24,13 +24,13 @@ class SubmitRunView(View):
 
         run = Run.objects.create(user=user, task_name=task_name, dataset=dataset)
         async_task(execute_run, run.pk)
-        return JsonResponse({'run_id': run.pk})
+        return JsonResponse({'run_id': str(run.uuid)})
 
 
 @method_decorator(login_required, name='dispatch')
 class RunStatusView(View):
-    def get(self, request, pk):
-        run = get_object_or_404(Run, pk=pk, user=request.user)
+    def get(self, request, uuid):
+        run = get_object_or_404(Run, uuid=uuid, user=request.user)
         return JsonResponse({
             'status':        run.status,
             'reward':        run.reward,
@@ -50,6 +50,6 @@ class RunHistoryView(View):
 
 @method_decorator(login_required, name='dispatch')
 class RunDetailView(View):
-    def get(self, request, pk):
-        run = get_object_or_404(Run, pk=pk, user=request.user)
+    def get(self, request, uuid):
+        run = get_object_or_404(Run, uuid=uuid, user=request.user)
         return render(request, 'runs/detail.html', {'run': run})

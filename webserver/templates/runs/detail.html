@@ -1,6 +1,6 @@
 {% extends "problems/base.html" %}
 {% load run_extras %}
-{% block title_suffix %} — Run #{{ run.pk }}{% endblock %}
+{% block title_suffix %} — Run {{ run.uuid }}{% endblock %}
 
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />

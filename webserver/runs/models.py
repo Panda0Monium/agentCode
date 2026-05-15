@@ -1,3 +1,5 @@
+import uuid as _uuid
+
 from django.conf import settings
 from django.db import models
 
@@ -9,6 +11,7 @@ class Run(models.Model):
         DONE    = 'done',    'Done'
         FAILED  = 'failed',  'Failed'
 
+    uuid          = models.UUIDField(default=_uuid.uuid4, unique=True, editable=False)
     user          = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='runs')
     task_name     = models.CharField(max_length=200)
     dataset       = models.CharField(max_length=100)
