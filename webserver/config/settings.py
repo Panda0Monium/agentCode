@@ -89,6 +89,8 @@ ACCOUNT_EMAIL_VERIFICATION = 'none'
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
+SOCIALACCOUNT_STORE_TOKENS = True
+
 SOCIALACCOUNT_PROVIDERS = {
     'huggingface': {
         'APP': {
@@ -113,3 +115,28 @@ CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
 STATIC_URL = '/static/'
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'verbose': {
+            'format': '[{asctime}] {levelname} {name}: {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'runs_file': {
+            'class': 'logging.FileHandler',
+            'filename': BASE_DIR / 'logs' / 'runs.log',
+            'formatter': 'verbose',
+        },
+    },
+    'loggers': {
+        'runs': {
+            'handlers': ['runs_file'],
+            'level': 'ERROR',
+            'propagate': False,
+        },
+    },
+}

@@ -3,10 +3,29 @@
 
 {% block content %}
 <div class="max-w-xl mx-auto mt-10">
+  <button onclick="history.back()"
+          class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4">
+    &#8592; Back
+  </button>
   <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Model Settings</h1>
   <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
-    Any OpenAI-compatible endpoint works — HuggingFace, OpenAI, a local vLLM, etc.
+    {% if is_hf_user %}
+      Choose which HuggingFace model to use for your agent runs.
+    {% else %}
+      Any OpenAI-compatible endpoint works — HuggingFace, OpenAI, a local vLLM, etc.
+    {% endif %}
   </p>
+
+  {% if is_hf_user %}
+  <div class="flex items-center gap-2 mb-5 px-3 py-2 rounded-lg bg-yellow-50 dark:bg-yellow-900/20
+              border border-yellow-200 dark:border-yellow-800 text-sm">
+    <svg width="16" height="16" viewBox="0 0 95 88" fill="none" xmlns="http://www.w3.org/2000/svg" class="shrink-0">
+      <path d="M47.4 5C24.9 5 6.7 23.2 6.7 45.7c0 16.2 9.5 30.3 23.4 37.1-.3-2.3-.1-4.9.6-7.3 1.3-4.4 8.5-36 8.5-36s-2.2-4.3-2.2-10.7c0-10 5.8-17.5 13-17.5 6.1 0 9.1 4.6 9.1 10.1 0 6.2-3.9 15.4-6 23.9-1.7 7.1 3.5 12.9 10.5 12.9 12.6 0 21.1-16.3 21.1-35.5 0-14.6-9.9-25.6-27.8-25.6-20.2 0-32.7 15.1-32.7 32 0 5.8 1.7 9.9 4.4 13.1.5.6.5 1.2.4 1.8-.4 1.8-1.4 5.7-1.6 6.5-.3 1-.8 1.3-1.9.8-8.7-3.6-12.8-13.3-12.8-24.2 0-19.9 16.7-43.6 49.7-43.6 26.6 0 44.1 19.3 44.1 40 0 27.3-15.1 47.7-37.4 47.7-7.5 0-14.5-4-16.9-8.6l-4.6 17.9c-1.4 5.5-5.2 12.4-7.7 16.6 5.8 1.8 12 2.7 18.4 2.7 22.5 0 40.7-18.2 40.7-40.7S69.9 5 47.4 5z" fill="#92400e"/>
+    </svg>
+    <span class="text-yellow-800 dark:text-yellow-300 font-medium">Connected via Hugging Face</span>
+    <span class="text-yellow-700 dark:text-yellow-400 ml-1">— API endpoint and key are configured automatically.</span>
+  </div>
+  {% endif %}
 
   <div class="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 p-6">
     {% if messages %}
@@ -17,26 +36,88 @@
 
     <form method="post">
       {% csrf_token %}
-      {% for field in form %}
-        <div class="mb-5">
-          <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-            {{ field.label }}
-          </label>
-          <input type="{{ field.field.widget.input_type }}"
-                 name="{{ field.html_name }}"
-                 id="{{ field.id_for_label }}"
-                 {% if field.value %}value="{{ field.value }}"{% endif %}
-                 class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
-                        text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
-                        dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
-          {% if field.help_text %}
-            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ field.help_text }}</p>
-          {% endif %}
-          {% if field.errors %}
-            <p class="mt-1 text-xs text-red-500">{{ field.errors|join:", " }}</p>
-          {% endif %}
+
+      {% if is_hf_user %}
+
+        {# ── Curated model grid ── #}
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Free models</p>
+        <div class="grid grid-cols-2 gap-2 mb-5">
+          {% for model in curated_models %}
+          <button type="button"
+                  data-model-id="{{ model.id }}"
+                  onclick="selectModel('{{ model.id }}')"
+                  class="model-card text-left px-3 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700
+                         hover:border-blue-400 dark:hover:border-blue-500 transition-colors">
+            <div class="flex items-center justify-between mb-0.5">
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100 truncate pr-2">{{ model.name }}</span>
+              <span class="shrink-0 text-xs px-1.5 py-0.5 rounded font-medium
+                {% if model.tag == 'Coding' %}bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300
+                {% elif model.tag == 'Reasoning' %}bg-purple-100 text-purple-700 dark:bg-purple-900/40 dark:text-purple-300
+                {% elif model.tag == 'Fast' %}bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300
+                {% else %}bg-gray-100 text-gray-600 dark:bg-gray-700 dark:text-gray-300{% endif %}">
+                {{ model.tag }}
+              </span>
+            </div>
+            <p class="text-xs text-gray-500 dark:text-gray-400">{{ model.desc }}</p>
+          </button>
+          {% endfor %}
         </div>
-      {% endfor %}
+
+        {# ── Model ID input (single source of truth for the form) ── #}
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-400 dark:text-gray-500 mb-2">Model ID</p>
+        <input type="text"
+               name="model_name"
+               id="id_model_name"
+               value="{{ form.model_name.value|default:'' }}"
+               placeholder="e.g. org/model-name"
+               autocomplete="off"
+               class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                      text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                      dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100 mb-1" />
+        <p class="text-xs text-gray-400 dark:text-gray-500 mb-5">
+          Select a model above or enter any HuggingFace model ID directly.
+        </p>
+        {% if form.model_name.errors %}
+          <p class="mb-4 text-xs text-red-500">{{ form.model_name.errors|join:", " }}</p>
+        {% endif %}
+
+        {# ── Auto-configured fields (read-only display) ── #}
+        <div class="mb-5 rounded-lg border border-gray-100 dark:border-gray-800 bg-gray-50 dark:bg-gray-800/50 px-4 py-3 text-xs text-gray-500 dark:text-gray-400 space-y-1">
+          <div class="flex justify-between">
+            <span>API Endpoint</span>
+            <span class="font-mono text-gray-700 dark:text-gray-300">api-inference.huggingface.co/v1</span>
+          </div>
+          <div class="flex justify-between">
+            <span>API Key</span>
+            <span class="font-mono text-gray-700 dark:text-gray-300">from your HF session</span>
+          </div>
+        </div>
+
+      {% else %}
+
+        {# ── Generic form for non-HF users ── #}
+        {% for field in form %}
+          <div class="mb-5">
+            <label class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              {{ field.label }}
+            </label>
+            <input type="{{ field.field.widget.input_type }}"
+                   name="{{ field.html_name }}"
+                   id="{{ field.id_for_label }}"
+                   {% if field.value %}value="{{ field.value }}"{% endif %}
+                   class="w-full px-3 py-2 text-sm rounded-lg border border-gray-300 bg-white
+                          text-gray-900 focus:outline-none focus:ring-2 focus:ring-blue-500
+                          dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" />
+            {% if field.help_text %}
+              <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">{{ field.help_text }}</p>
+            {% endif %}
+            {% if field.errors %}
+              <p class="mt-1 text-xs text-red-500">{{ field.errors|join:", " }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+
+      {% endif %}
 
       <button type="submit"
               class="w-full py-2 rounded-lg bg-blue-600 text-white text-sm font-medium
@@ -46,4 +127,35 @@
     </form>
   </div>
 </div>
+
+{% if is_hf_user %}
+<script>
+  const SELECTED = [
+    'border-blue-500', 'dark:border-blue-400',
+    'bg-blue-50', 'dark:bg-blue-900/20',
+  ];
+  const UNSELECTED = ['border-gray-200', 'dark:border-gray-700'];
+
+  function selectModel(id) {
+    document.getElementById('id_model_name').value = id;
+    syncHighlights(id);
+  }
+
+  function syncHighlights(value) {
+    document.querySelectorAll('.model-card').forEach(card => {
+      const match = card.dataset.modelId === value;
+      card.classList.remove(...SELECTED, ...UNSELECTED);
+      card.classList.add(...(match ? SELECTED : UNSELECTED));
+    });
+  }
+
+  document.getElementById('id_model_name').addEventListener('input', function () {
+    syncHighlights(this.value);
+  });
+
+  // highlight on load if current value matches a curated model
+  syncHighlights(document.getElementById('id_model_name').value);
+</script>
+{% endif %}
+
 {% endblock %}

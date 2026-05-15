@@ -66,7 +66,7 @@
           <a href="{% url 'account_login' %}" class="text-blue-600 hover:underline dark:text-blue-400">Sign in</a>
           to run this problem against your model.
         </p>
-      {% elif not user.model_api_url or not user.model_name or not user.model_api_key %}
+      {% elif not user.is_model_configured %}
         <p class="text-sm text-gray-500 dark:text-gray-400">
           <a href="{% url 'model_config' %}" class="text-blue-600 hover:underline dark:text-blue-400">Configure your model</a>
           before running.
@@ -134,8 +134,8 @@
           </div>
 
           <div id="status-failed" class="hidden">
-            <p class="text-sm font-medium text-red-500 mb-2">Run failed</p>
-            <pre id="val-error" class="text-xs text-red-400 bg-red-50 dark:bg-red-900/20 rounded-lg p-3 overflow-x-auto whitespace-pre-wrap max-h-32"></pre>
+            <p class="text-sm font-medium text-red-500 mb-1">Run failed</p>
+            <p id="val-error" class="text-xs text-gray-500 dark:text-gray-400"></p>
           </div>
 
         </div>
@@ -229,7 +229,7 @@
   })();
 </script>
 
-{% if user.is_authenticated and user.model_api_url and user.model_name and user.model_api_key %}
+{% if user.is_authenticated and user.is_model_configured %}
 <script>
 (function () {
   var meta      = JSON.parse(document.getElementById('problem-meta').textContent);

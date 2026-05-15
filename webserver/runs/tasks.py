@@ -1,7 +1,10 @@
+import logging
 import os
 import sys
 import traceback
 from pathlib import Path
+
+logger = logging.getLogger('runs')
 
 # Make the agentCode root importable (runner, agent, tasks, etc. live there)
 _ROOT = Path(__file__).resolve().parent.parent.parent
@@ -32,8 +35,18 @@ def execute_run(run_id: int) -> None:
     run = Run.objects.select_related('user').get(pk=run_id)
 
     try:
-        user = run.user
-        os.environ['AGENTCODE_API_KEY'] = user.model_api_key
+        user    = run.user
+        api_key = user.model_api_key
+        if not api_key:
+            from allauth.socialaccount.models import SocialAccount, SocialToken
+            social = SocialAccount.objects.filter(user=user, provider='huggingface').first()
+            if social:
+                token = SocialToken.objects.filter(account=social).first()
+                if token:
+                    api_key = token.token
+        if not api_key:
+            raise RuntimeError('No API key available. Re-login with Hugging Face to refresh the session token.')
+        os.environ['AGENTCODE_API_KEY'] = api_key
         os.environ['AGENTCODE_API_URL'] = user.model_api_url
         os.environ['AGENTCODE_MODEL']   = user.model_name
 
@@ -50,7 +63,9 @@ def execute_run(run_id: int) -> None:
         run.save()
 
     except Exception:
+        tb = traceback.format_exc()
+        logger.error('Run %s failed:\n%s', run.uuid, tb)
         run.status       = Run.Status.FAILED
-        run.error        = traceback.format_exc()
+        run.error        = tb
         run.completed_at = timezone.now()
         run.save()
