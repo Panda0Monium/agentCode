@@ -175,6 +175,8 @@ def coding_agent(instruction: str) -> Callable[[Session], None]:
         base_url=os.environ["AGENTCODE_API_URL"],
     ).bind_tools(_TOOL_SCHEMAS)
 
+    MAX_TURNS = 25
+
     def _agent(session: Session) -> None:
         messages = [
             SystemMessage(content=_SYSTEM_PROMPT),
@@ -182,10 +184,12 @@ def coding_agent(instruction: str) -> Callable[[Session], None]:
         ]
 
         _empty_turns = 0
-        while True:
+        _turns = 0
+        while _turns < MAX_TURNS:
             response: AIMessage = llm.invoke(messages)
             session.log_llm(messages, response)
             messages.append(response)
+            _turns += 1
 
             if not response.tool_calls:
                 if not (response.content or "").strip():

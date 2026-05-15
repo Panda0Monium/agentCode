@@ -6,7 +6,7 @@ from django.views import View
 
 from .forms import HFModelConfigForm, ModelConfigForm
 
-HF_INFERENCE_URL = 'https://api-inference.huggingface.co/v1'
+HF_INFERENCE_URL = 'https://router.huggingface.co/v1'
 
 CURATED_HF_MODELS = [
     {'id': 'Qwen/Qwen2.5-Coder-32B-Instruct',          'name': 'Qwen2.5-Coder 32B',  'tag': 'Coding',     'desc': 'Best in class for code generation'},

@@ -49,12 +49,13 @@ def process(actions: list) -> dict:
 
         elif tool == 'read_file':
             path = args.get('path', '')
-            if isinstance(result, str):
-                prev_content[path] = result
+            content = result if isinstance(result, str) else ''
+            prev_content[path] = content
             steps.append({
                 'tool':      'read_file',
                 'timestamp': ts,
                 'path':      path,
+                'content':   content[:3000],
             })
 
         elif tool == 'run_tests':
@@ -100,6 +101,7 @@ def process(actions: list) -> dict:
             })
 
         elif tool == 'list_files':
-            steps.append({'tool': 'list_files', 'timestamp': ts})
+            files = result if isinstance(result, list) else []
+            steps.append({'tool': 'list_files', 'timestamp': ts, 'files': files})
 
     return {'steps': steps}
