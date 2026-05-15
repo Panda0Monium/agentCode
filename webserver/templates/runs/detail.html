@@ -4,6 +4,11 @@
 
 {% block content %}
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/diff2html/bundles/css/diff2html.min.css" />
+<style>
+  /* diff2html uses light backgrounds; prevent dark-mode body text-color from bleeding in */
+  .d2h-file-wrapper { color: #374151; }
+  .d2h-code-line span, .d2h-code-side-line span { color: inherit; }
+</style>
 
 <a href="{% url 'run_history' %}" class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-6">
   &#8592; My Runs
@@ -430,6 +435,9 @@
     if (s.tool === 'list_files' && s.files) {
       return s.files.map(function(f) { return '<div class="text-gray-500">' + esc(f) + '</div>'; }).join('');
     }
+    if (s.tool === 'read_file' && s.content) {
+      return '<pre class="whitespace-pre-wrap text-gray-600 dark:text-gray-300">' + esc(s.content) + '</pre>';
+    }
     return '';
   }
 
@@ -621,7 +629,7 @@
         '<span class="text-gray-600 text-xs font-mono mt-0.5 w-10 shrink-0 tabular-nums">' + fmt(s.timestamp) + '</span>' +
         '<span class="text-xs font-mono font-bold ' + tagColor + ' w-24 shrink-0 mt-0.5">' + esc(s.tool) + '</span>' +
         '<span class="text-sm text-gray-300 flex-1 min-w-0 truncate">' + stepSummary(s) + '</span>' +
-        (hasDetail ? '<span id="log-arrow-' + i + '" class="text-gray-600 text-xs ml-2 shrink-0">▶</span>' : '') +
+        (hasDetail ? '<span id="log-arrow-' + i + '" class="text-gray-400 text-xs ml-2 shrink-0">▶</span>' : '') +
         '</button>' +
         (hasDetail ? '<div id="log-detail-' + i + '" class="hidden px-4 pb-3 pt-1 bg-gray-900 border-t border-gray-800">' + detail + '</div>' : '') +
         '</div>';
@@ -672,6 +680,12 @@
       return s.errors.map(function(e) {
         return '<div class="text-xs"><span class="text-gray-500">' + esc(e.path) + ':' + e.line + '</span> <span class="text-amber-400">' + esc(e.code) + '</span> <span class="text-red-400">' + esc(e.message) + '</span></div>';
       }).join('');
+    }
+    if (s.tool === 'read_file' && s.content) {
+      return '<pre class="text-gray-300 text-xs whitespace-pre-wrap break-all">' + esc(s.content) + '</pre>';
+    }
+    if (s.tool === 'list_files' && s.files && s.files.length) {
+      return s.files.map(function(f) { return '<div class="text-gray-400 text-xs">' + esc(f) + '</div>'; }).join('');
     }
     return null;
   }

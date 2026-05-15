@@ -53,12 +53,16 @@ def execute_run(run_id: int) -> None:
         task = Task.load(_ROOT / 'tasks' / run.task_name)
         result = run_episode(task, coding_agent(task.instruction))
 
+        if result.agent_error:
+            logger.error('Run %s agent error:\n%s', run.uuid, result.agent_error)
+
         run.status        = Run.Status.DONE
         run.reward        = result.reward
         run.public_score  = result.grade.public_score
         run.private_score = result.grade.private_score
         run.lint_score    = result.grade.lint_score
         run.trajectory    = process_trajectory(result.trajectory)
+        run.error         = result.agent_error or ''
         run.completed_at  = timezone.now()
         run.save()
 

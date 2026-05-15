@@ -152,38 +152,50 @@
 <script id="problem-meta"     type="application/json">{{ problem_meta_json }}</script>
 
 <style>
-  .instruction-body h1, .instruction-body h2, .instruction-body h3 {
-    font-weight: 600; margin-top: 1.25rem; margin-bottom: 0.5rem; color: inherit;
+  .instruction-body p   { margin-bottom: 0.75rem; line-height: 1.7; }
+  .instruction-body pre {
+    background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 0.5rem;
+    padding: 0.75rem 1rem; margin: 0.5rem 0 0.75rem;
+    overflow-x: auto; font-size: 0.8rem;
+    font-family: ui-monospace, 'Cascadia Code', monospace; line-height: 1.6;
+    white-space: pre; color: #374151;
   }
-  .instruction-body h1 { font-size: 1.2rem; }
-  .instruction-body h2 { font-size: 1.05rem; }
-  .instruction-body h3 { font-size: 1rem; }
-  .instruction-body p  { margin-bottom: 0.75rem; }
-  .instruction-body ul, .instruction-body ol {
-    margin: 0.5rem 0 0.75rem 1.25rem; line-height: 1.7;
-  }
-  .instruction-body ul  { list-style: disc; }
-  .instruction-body ol  { list-style: decimal; }
   .instruction-body code {
     background: #f3f4f6; border-radius: 0.25rem;
     padding: 0.1em 0.35em; font-size: 0.85em; font-family: ui-monospace, monospace;
   }
-  .instruction-body pre {
-    background: #f3f4f6; border-radius: 0.375rem; padding: 1rem;
-    overflow-x: auto; margin: 0.75rem 0; font-size: 0.85rem;
-    font-family: ui-monospace, monospace; line-height: 1.6;
-  }
-  .instruction-body pre code { background: none; padding: 0; }
+  .dark .instruction-body pre  { background: #1f2937; border-color: #374151; color: #d1d5db; }
   .dark .instruction-body code { background: #1f2937; }
-  .dark .instruction-body pre  { background: #1f2937; }
 </style>
 {% endblock %}
 
 {% block extra_scripts %}
 <script>
-  // Render markdown instruction
-  var raw = JSON.parse(document.getElementById('instruction-raw').textContent);
-  document.getElementById('instruction-markdown').innerHTML = marked.parse(raw);
+  // Render instruction — splits on blank lines; indented sections → <pre>, prose → <p>
+  (function() {
+    var raw = JSON.parse(document.getElementById('instruction-raw').textContent);
+
+    function escHtml(s) {
+      return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function inlineFmt(s) {
+      // backtick code spans only
+      return escHtml(s).replace(/`([^`\n]+)`/g, '<code>$1</code>');
+    }
+
+    var sections = raw.split(/\n{2,}/);
+    var html = sections.map(function(section) {
+      if (!section.trim()) return '';
+      var lines = section.split('\n');
+      var hasIndent = lines.some(function(l) { return /^ {2,}\S/.test(l); });
+      if (hasIndent) {
+        return '<pre>' + escHtml(section.replace(/\s+$/, '')) + '</pre>';
+      }
+      return '<p>' + inlineFmt(section.replace(/\n/g, ' ').trim()) + '</p>';
+    }).join('');
+
+    document.getElementById('instruction-markdown').innerHTML = html;
+  })();
 
   // Render stub code panel
   (function() {

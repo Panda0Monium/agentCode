@@ -3,10 +3,10 @@
 
 {% block content %}
 <div class="max-w-xl mx-auto mt-10">
-  <button onclick="history.back()"
-          class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4">
+  <a href="{% url 'home' %}"
+     class="inline-flex items-center gap-1 text-sm text-blue-600 dark:text-blue-400 hover:underline mb-4">
     &#8592; Back
-  </button>
+  </a>
   <h1 class="text-2xl font-bold text-gray-900 dark:text-white mb-2">Model Settings</h1>
   <p class="text-sm text-gray-500 dark:text-gray-400 mb-6">
     {% if is_hf_user %}
