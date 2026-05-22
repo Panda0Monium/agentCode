@@ -152,6 +152,4 @@ Noop runs (`--noop`) produce no output in either mode.
 
 ## Frontend
 
-![Frontend](docs/Frontend1.png)
-
-![Leaderboard](docs/Leaderboard1.png)
+Live at **[agentcode.duckdns.org](https://agentcode.duckdns.org)** — sign in with GitHub or HuggingFace to run tasks.
