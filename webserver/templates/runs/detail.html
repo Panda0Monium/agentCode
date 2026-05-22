@@ -111,15 +111,27 @@
   </div>
   {% endif %}
 
-  {% if run.status == 'failed' %}
-  <div class="mt-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 px-4 py-3">
-    <p class="text-sm font-medium text-red-600 dark:text-red-400 mb-1">Run failed</p>
-    {% if run.error_summary %}
-      <p class="text-xs font-mono text-red-500 dark:text-red-400 mb-2">{{ run.error_summary }}</p>
+  {% with err=run.user_facing_error %}
+  {% if err %}
+    {% if err.0 == 'warning' %}
+    <div class="mt-4 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/10 px-4 py-3 flex gap-3">
+      <span class="text-yellow-500 text-base shrink-0">⚠</span>
+      <div>
+        <p class="text-sm font-medium text-yellow-700 dark:text-yellow-400 mb-0.5">Agent stopped early</p>
+        <p class="text-xs text-yellow-600 dark:text-yellow-500">{{ err.1 }}</p>
+      </div>
+    </div>
+    {% else %}
+    <div class="mt-4 rounded-lg border border-red-200 dark:border-red-900/50 bg-red-50 dark:bg-red-900/10 px-4 py-3 flex gap-3">
+      <span class="text-red-500 text-base shrink-0">✕</span>
+      <div>
+        <p class="text-sm font-medium text-red-600 dark:text-red-400 mb-0.5">Run failed</p>
+        <p class="text-xs text-red-500 dark:text-red-400">{{ err.1 }}</p>
+      </div>
+    </div>
     {% endif %}
-    <p class="text-xs text-gray-500 dark:text-gray-400">Ref: <span class="font-mono">{{ run.uuid }}</span> — full details in <code>webserver/logs/runs.log</code></p>
-  </div>
   {% endif %}
+  {% endwith %}
 
 </div>
 <!-- end header -->

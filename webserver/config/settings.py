@@ -25,6 +25,7 @@ INSTALLED_APPS = [
     'allauth',
     'allauth.account',
     'allauth.socialaccount',
+    'allauth.socialaccount.providers.github',
     'huggingface_provider',
     'django_q',
     # local
@@ -36,6 +37,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -90,15 +92,24 @@ LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
 
 SOCIALACCOUNT_STORE_TOKENS = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
+SOCIALACCOUNT_EMAIL_AUTHENTICATION_AUTO_CONNECT = True
 
 SOCIALACCOUNT_PROVIDERS = {
     'huggingface': {
         'APP': {
-            'client_id':     os.environ.get('HF_CLIENT_ID', ''),
-            'secret':        os.environ.get('HF_CLIENT_SECRET', ''),
+            'client_id': os.environ.get('HF_CLIENT_ID', ''),
+            'secret':    os.environ.get('HF_CLIENT_SECRET', ''),
         },
         'SCOPE': ['openid', 'profile', 'email', 'inference-api'],
-    }
+    },
+    'github': {
+        'APP': {
+            'client_id': os.environ.get('GITHUB_CLIENT_ID', ''),
+            'secret':    os.environ.get('GITHUB_CLIENT_SECRET', ''),
+        },
+        'SCOPE': ['read:user', 'user:email'],
+    },
 }
 
 # Django Q — uses SQLite as broker, no Redis needed
@@ -110,9 +121,19 @@ Q_CLUSTER = {
     'orm': 'default',
 }
 
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 CORS_ALLOWED_ORIGINS = ['http://localhost:5173']
 
+CSRF_TRUSTED_ORIGINS = os.environ.get(
+    'DJANGO_CSRF_TRUSTED_ORIGINS',
+    'https://agentcode.duckdns.org'
+).split(',')
+
 STATIC_URL = '/static/'
+STATIC_ROOT = BASE_DIR / 'staticfiles'
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
@@ -140,3 +161,5 @@ LOGGING = {
         },
     },
 }
+
+

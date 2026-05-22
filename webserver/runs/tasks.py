@@ -37,18 +37,34 @@ def execute_run(run_id: int) -> None:
     try:
         user    = run.user
         api_key = user.model_api_key
+        api_url = user.model_api_url
+        model   = user.model_name
+
         if not api_key:
             from allauth.socialaccount.models import SocialAccount, SocialToken
-            social = SocialAccount.objects.filter(user=user, provider='huggingface').first()
-            if social:
-                token = SocialToken.objects.filter(account=social).first()
+
+            hf_social = SocialAccount.objects.filter(user=user, provider='huggingface').first()
+            if hf_social:
+                token = SocialToken.objects.filter(account=hf_social).first()
                 if token:
                     api_key = token.token
+                    api_url = api_url or 'https://api-inference.huggingface.co/v1'
+                    model   = model   or 'Qwen/Qwen2.5-Coder-32B-Instruct'
+
+            if not api_key:
+                gh_social = SocialAccount.objects.filter(user=user, provider='github').first()
+                if gh_social:
+                    token = SocialToken.objects.filter(account=gh_social).first()
+                    if token:
+                        api_key = token.token
+                        api_url = api_url or 'https://models.inference.ai.azure.com'
+                        model   = model   or 'gpt-4o-mini'
+
         if not api_key:
-            raise RuntimeError('No API key available. Re-login with Hugging Face to refresh the session token.')
+            raise RuntimeError('No API key available. Sign in with HuggingFace or GitHub to run the agent.')
         os.environ['AGENTCODE_API_KEY'] = api_key
-        os.environ['AGENTCODE_API_URL'] = user.model_api_url
-        os.environ['AGENTCODE_MODEL']   = user.model_name
+        os.environ['AGENTCODE_API_URL'] = api_url
+        os.environ['AGENTCODE_MODEL']   = model
 
         task = Task.load(_ROOT / 'tasks' / run.task_name)
         result = run_episode(task, coding_agent(task.instruction))

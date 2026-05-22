@@ -33,5 +33,23 @@ class Run(models.Model):
         last = next((l for l in reversed(self.error.splitlines()) if l.strip()), '')
         return last
 
+    @property
+    def user_facing_error(self):
+        """Return a (level, message) tuple: level is 'warning' or 'error'."""
+        if not self.error:
+            return None
+        e = self.error
+        if 'depleted your monthly' in e or ('402' in e and 'credits' in e):
+            return ('error', "Your inference credits are depleted. Top up your account or switch to a different provider in Model Settings.")
+        if 'tokens_limit_reached' in e or 'Request body too large' in e or '413' in e:
+            return ('warning', "The model's context limit was reached mid-run — the agent was cut off early. Switch to a model with a larger context window (e.g. gpt-4o-mini instead of gpt-4o).")
+        if 'ImageNotFound' in e or 'No such image' in e:
+            return ('error', "A required Docker image is missing on the server. Contact the administrator.")
+        if 'No API key available' in e:
+            return ('error', "No API key configured. Sign in with HuggingFace or GitHub to run the agent.")
+        if self.status == self.Status.DONE:
+            return ('warning', f"The agent encountered an error mid-run: {self.error_summary}")
+        return ('error', f"Run failed: {self.error_summary}")
+
     class Meta:
         ordering = ['-created_at']
