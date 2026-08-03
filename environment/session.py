@@ -19,6 +19,7 @@ Usage:
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Callable, Optional
 
 from . import tools as _tools
 from .sandbox import Sandbox
@@ -38,6 +39,7 @@ def _serialize_msg(msg) -> dict:
 class Session:
     sandbox: Sandbox
     timeout_sec: float
+    on_action: Optional[Callable] = None
     _start: float = field(default_factory=time.monotonic, init=False)
     _log: list[Action] = field(default_factory=list, init=False)
 
@@ -104,13 +106,13 @@ class Session:
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_task(cls, task: "Task") -> "Session":  # noqa: F821
+    def from_task(cls, task: "Task", on_action: Optional[Callable] = None) -> "Session":  # noqa: F821
         sandbox = Sandbox(task.repo_path, image=task.docker_image).start()
         # Public tests are visible to the agent; private tests are injected by the grader only.
         public_tests = task.tests_path / "public"
         if public_tests.exists():
             sandbox.inject_dir(public_tests, "tests/public")
-        return cls(sandbox=sandbox, timeout_sec=task.timeout_sec)
+        return cls(sandbox=sandbox, timeout_sec=task.timeout_sec, on_action=on_action)
 
     def close(self) -> None:
         self.sandbox.stop()
@@ -133,11 +135,15 @@ class Session:
             )
 
     def _record(self, tool: str, args: dict, result: object) -> None:
-        self._log.append(
-            Action(
-                tool=tool,
-                args=args,
-                result=result,
-                timestamp=self.elapsed_sec,
-            )
+        action = Action(
+            tool=tool,
+            args=args,
+            result=result,
+            timestamp=self.elapsed_sec,
         )
+        self._log.append(action)
+        if self.on_action is not None:
+            try:
+                self.on_action(action)
+            except Exception:
+                pass

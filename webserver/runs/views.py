@@ -49,14 +49,16 @@ class SubmitRunView(View):
 class RunStatusView(View):
     def get(self, request, uuid):
         run = get_object_or_404(Run, uuid=uuid, user=request.user)
-        return JsonResponse({
+        data = {
             'status':        run.status,
             'reward':        run.reward,
             'public_score':  run.public_score,
             'private_score': run.private_score,
             'lint_score':    run.lint_score,
             'error':         f'Run failed — ref: {run.uuid}' if run.status == Run.Status.FAILED else None,
-        })
+            'live_log':      run.live_log or [],
+        }
+        return JsonResponse(data)
 
 
 @method_decorator(login_required, name='dispatch')

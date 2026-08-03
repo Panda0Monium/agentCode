@@ -15,6 +15,43 @@ from dotenv import load_dotenv
 load_dotenv(_ROOT / '.env')
 
 
+def _make_live_entry(action) -> dict:
+    """Convert one Action into a compact dict for the live console."""
+    tool = action.tool
+    ts   = round(action.timestamp, 1)
+    if tool == 'llm_invoke':
+        result     = action.result or {}
+        text       = result.get('content') or ''
+        if isinstance(text, list):
+            text = ' '.join(p.get('text', '') for p in text if isinstance(p, dict))
+        tool_calls = result.get('tool_calls') or []
+        summary    = (text[:120].strip() if text else
+                      ('Calling: ' + ', '.join(tc.get('name', '') for tc in tool_calls) if tool_calls else 'Thinking...'))
+        return {'tool': 'llm', 'ts': ts, 'text': summary}
+    if tool == 'read_file':
+        return {'tool': 'read', 'ts': ts, 'path': action.args.get('path', '')}
+    if tool == 'write_file':
+        return {'tool': 'write', 'ts': ts, 'path': action.args.get('path', '')}
+    if tool == 'list_files':
+        files = action.result if isinstance(action.result, list) else []
+        return {'tool': 'list', 'ts': ts, 'count': len(files)}
+    if tool == 'run_tests':
+        r = action.result
+        if hasattr(r, 'passed'):
+            return {'tool': 'tests', 'ts': ts, 'passed': r.passed, 'total': r.total}
+        if isinstance(r, dict):
+            return {'tool': 'tests', 'ts': ts, 'passed': r.get('passed', 0), 'total': r.get('total', 0)}
+        return {'tool': 'tests', 'ts': ts, 'passed': 0, 'total': 0}
+    if tool == 'run_lint':
+        r = action.result
+        if hasattr(r, 'errors'):
+            return {'tool': 'lint', 'ts': ts, 'errors': len(r.errors)}
+        if isinstance(r, dict):
+            return {'tool': 'lint', 'ts': ts, 'errors': len(r.get('errors', []))}
+        return {'tool': 'lint', 'ts': ts, 'errors': 0}
+    return {'tool': tool, 'ts': ts}
+
+
 def execute_run(run_id: int) -> None:
     from django.utils import timezone
     from runs.models import Run
@@ -66,8 +103,14 @@ def execute_run(run_id: int) -> None:
         os.environ['AGENTCODE_API_URL'] = api_url
         os.environ['AGENTCODE_MODEL']   = model
 
-        task = Task.load(_ROOT / 'tasks' / run.task_name)
-        result = run_episode(task, coding_agent(task.instruction))
+        task     = Task.load(_ROOT / 'tasks' / run.task_name)
+        live_log: list = []
+
+        def on_action(action):
+            live_log.append(_make_live_entry(action))
+            Run.objects.filter(pk=run_id).update(live_log=live_log)
+
+        result = run_episode(task, coding_agent(task.instruction), on_action=on_action)
 
         if result.agent_error:
             logger.error('Run %s agent error:\n%s', run.uuid, result.agent_error)

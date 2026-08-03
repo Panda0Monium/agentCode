@@ -22,6 +22,7 @@ class Run(models.Model):
     lint_score    = models.FloatField(null=True, blank=True)
     error         = models.TextField(blank=True)
     trajectory    = models.JSONField(null=True, blank=True)
+    live_log      = models.JSONField(null=True, blank=True)
     created_at    = models.DateTimeField(auto_now_add=True)
     started_at    = models.DateTimeField(null=True, blank=True)
     completed_at  = models.DateTimeField(null=True, blank=True)
