@@ -5,3 +5,4 @@ pyyaml>=6.0
 django-allauth[socialaccount]>=65.0
 django-q2>=1.6
 python-dotenv>=1.0.0
+whitenoise>=6.0

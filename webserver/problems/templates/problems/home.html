@@ -9,7 +9,8 @@
   </h1>
   <p class="mt-3 max-w-2xl mx-auto text-base text-gray-600 dark:text-gray-400">
     AgentCode runs your model against real software engineering tasks in isolated
-    sandboxes, then grades it on hidden tests &mdash; so you get a reward signal, not a vibe check.
+    sandboxes, then grades it on hidden tests. Sign in with GitHub or Hugging Face to
+    evaluate their hosted models instantly, or bring your own OpenAI-compatible endpoint.
   </p>
 
   <div class="mt-6 flex flex-wrap items-center justify-center gap-6 text-sm text-gray-500 dark:text-gray-400">
@@ -26,21 +27,9 @@
       Full trajectories for RL training
     </span>
   </div>
-
-  {% if not user.is_authenticated %}
-  <div class="mt-7 flex flex-wrap items-center justify-center gap-3">
-    <a href="{% url 'account_signup' %}"
-       class="px-5 py-2.5 rounded-lg bg-blue-600 text-white text-sm font-medium
-              hover:bg-blue-700 transition-colors">Get Started</a>
-    <a href="#catalogue"
-       class="px-5 py-2.5 rounded-lg border border-gray-300 text-sm font-medium text-gray-700
-              hover:bg-gray-100 transition-colors
-              dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800">Browse Problems</a>
-  </div>
-  {% endif %}
 </section>
 
-<div id="catalogue" class="mb-6 pt-2 border-t border-gray-200 dark:border-gray-800">
+<div class="mb-6 pt-2 border-t border-gray-200 dark:border-gray-800">
   <h2 class="text-2xl font-bold text-gray-900 dark:text-white mt-6">Problem Catalogue</h2>
   <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
     Pick a task, run your model, and see how it scores.
