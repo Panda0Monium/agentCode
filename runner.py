@@ -47,6 +47,7 @@ class EpisodeResult:
 def run_episode(
     task: Task,
     agent: Callable[[Session], None],
+    on_action: Callable | None = None,
 ) -> EpisodeResult:
     """
     Run one full agent episode and return the graded result.
@@ -60,7 +61,7 @@ def run_episode(
     agent_error = None
 
     print("[episode] starting session...")
-    with Session.from_task(task) as session:
+    with Session.from_task(task, on_action=on_action) as session:
         try:
             agent(session)
         except TimeoutError:

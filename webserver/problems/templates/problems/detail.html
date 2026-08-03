@@ -89,27 +89,26 @@
         </div>
 
         <!-- Status section -->
-        <div id="run-status" class="hidden">
+        <div id="run-status" class="hidden mt-1 space-y-3">
 
-          <div id="status-pending" class="hidden">
-            <div class="flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
-              <div class="w-2 h-2 rounded-full bg-gray-400 animate-pulse"></div>
-              Queued…
-            </div>
+          <!-- State indicator -->
+          <div class="flex items-center gap-2 text-sm">
+            <div id="state-dot" class="w-2 h-2 rounded-full bg-gray-400"></div>
+            <span id="state-text" class="text-gray-500 dark:text-gray-400">Queued…</span>
           </div>
 
-          <div id="status-running" class="hidden">
-            <div class="flex items-center gap-2 text-sm text-blue-600 dark:text-blue-400 mb-2">
-              <div class="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
-              Running agent…
+          <!-- Live console -->
+          <div id="live-console" class="hidden bg-gray-950 rounded-lg border border-gray-800 overflow-hidden">
+            <div class="px-3 py-1.5 border-b border-gray-800 flex items-center gap-2">
+              <span class="text-xs text-gray-500 font-mono uppercase tracking-wide">Console</span>
+              <span id="console-count" class="ml-auto text-xs text-gray-700 font-mono"></span>
             </div>
-            <div class="h-1 bg-gray-100 dark:bg-gray-800 rounded-full overflow-hidden">
-              <div class="h-full bg-blue-500 rounded-full animate-pulse" style="width:60%"></div>
-            </div>
+            <div id="console-output" class="font-mono text-xs p-3 space-y-0.5 overflow-y-scroll overflow-x-auto" style="max-height:230px;"></div>
           </div>
 
-          <div id="status-done" class="hidden">
-            <div class="grid grid-cols-2 gap-2 mb-3">
+          <!-- Score grid (shown when done) -->
+          <div id="status-done" class="hidden space-y-3">
+            <div class="grid grid-cols-2 gap-2">
               <div class="rounded-lg bg-gray-50 dark:bg-gray-800 p-3">
                 <p class="text-xs text-gray-400 mb-0.5">Reward</p>
                 <p id="val-reward" class="text-lg font-bold text-gray-900 dark:text-white tabular-nums"></p>
@@ -128,11 +127,12 @@
               </div>
             </div>
             <a id="run-detail-link" href="#"
-               class="hidden flex items-center justify-center gap-1 w-full py-2 rounded-lg border border-blue-200 dark:border-blue-800 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
+               class="flex items-center justify-center gap-1 w-full py-2 rounded-lg border border-blue-200 dark:border-blue-800 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors">
               View full run &rarr;
             </a>
           </div>
 
+          <!-- Error (shown when failed) -->
           <div id="status-failed" class="hidden">
             <p class="text-sm font-medium text-red-500 mb-1">Run failed</p>
             <p id="val-error" class="text-xs text-gray-500 dark:text-gray-400"></p>
@@ -244,54 +244,162 @@
 {% if user.is_authenticated and user.is_model_configured %}
 <script>
 (function () {
-  var meta      = JSON.parse(document.getElementById('problem-meta').textContent);
-  var btn       = document.getElementById('run-btn');
-  var statusEl  = document.getElementById('run-status');
-  var pollTimer = null;
+  var meta       = JSON.parse(document.getElementById('problem-meta').textContent);
+  var btn        = document.getElementById('run-btn');
+  var statusEl   = document.getElementById('run-status');
+  var pollTimer  = null;
+  var seenCount  = 0;
 
-  function show(id) {
-    ['status-pending','status-running','status-done','status-failed'].forEach(function(s) {
-      document.getElementById(s).classList.toggle('hidden', s !== id);
-    });
-    statusEl.classList.remove('hidden');
-  }
+  var RUN_SVG = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>';
 
   function fmt(v) {
     return v === null || v === undefined ? '—' : (v * 100).toFixed(1) + '%';
+  }
+
+  function setStateIndicator(dotClass, text) {
+    var dot  = document.getElementById('state-dot');
+    var txt  = document.getElementById('state-text');
+    dot.className = 'w-2 h-2 rounded-full ' + dotClass;
+    txt.className = 'text-sm ' + (dotClass.includes('blue') ? 'text-blue-600 dark:text-blue-400'
+                                : dotClass.includes('green') ? 'text-green-600 dark:text-green-400'
+                                : dotClass.includes('red')   ? 'text-red-500'
+                                : 'text-gray-500 dark:text-gray-400');
+    txt.textContent = text;
+  }
+
+  function appendLogEntries(entries) {
+    if (!entries || !entries.length) return;
+    var out     = document.getElementById('console-output');
+    var console_ = document.getElementById('live-console');
+    var newItems = entries.slice(seenCount);
+    if (!newItems.length) return;
+    seenCount = entries.length;
+    document.getElementById('console-count').textContent = seenCount + ' steps';
+    console_.classList.remove('hidden');
+
+    newItems.forEach(function(e) {
+      var row = document.createElement('div');
+      row.className = 'flex gap-2 items-baseline leading-5';
+
+      var ts = document.createElement('span');
+      ts.className = 'text-gray-600 shrink-0 tabular-nums';
+      ts.style.minWidth = '3.8rem';
+      ts.textContent = e.ts + 's';
+
+      var tool = document.createElement('span');
+      tool.className = 'shrink-0 w-10';
+
+      var summary = document.createElement('span');
+      summary.className = 'min-w-0 break-words';
+
+      switch (e.tool) {
+        case 'llm':
+          tool.className += ' text-purple-400';
+          tool.textContent = 'llm';
+          summary.className += ' text-gray-400 italic';
+          summary.textContent = e.text || 'Thinking...';
+          break;
+        case 'read':
+          tool.className += ' text-cyan-500';
+          tool.textContent = 'read';
+          summary.className += ' text-gray-300';
+          summary.textContent = e.path;
+          break;
+        case 'write':
+          tool.className += ' text-yellow-400';
+          tool.textContent = 'write';
+          summary.className += ' text-gray-300';
+          summary.textContent = e.path;
+          break;
+        case 'list':
+          tool.className += ' text-gray-500';
+          tool.textContent = 'list';
+          summary.className += ' text-gray-500';
+          summary.textContent = e.count + ' file' + (e.count === 1 ? '' : 's');
+          break;
+        case 'tests':
+          var allPass = e.passed === e.total;
+          tool.className += allPass ? ' text-green-400' : ' text-orange-400';
+          tool.textContent = 'tests';
+          summary.className += ' text-gray-300';
+          summary.textContent = e.passed + '/' + e.total + ' passed';
+          break;
+        case 'lint':
+          tool.className += e.errors === 0 ? ' text-green-400' : ' text-red-400';
+          tool.textContent = 'lint';
+          summary.className += ' text-gray-300';
+          summary.textContent = e.errors + ' error' + (e.errors === 1 ? '' : 's');
+          break;
+        default:
+          tool.className += ' text-gray-500';
+          tool.textContent = e.tool;
+          summary.className += ' text-gray-400';
+      }
+
+      row.appendChild(ts);
+      row.appendChild(tool);
+      row.appendChild(summary);
+      out.appendChild(row);
+    });
+
+    var atBottom = out.scrollHeight - out.scrollTop - out.clientHeight < 40;
+    if (atBottom) out.scrollTop = out.scrollHeight;
   }
 
   function poll(runId) {
     fetch('/runs/' + runId + '/status/')
       .then(function(r) { return r.json(); })
       .then(function(d) {
-        if      (d.status === 'pending') { show('status-pending'); }
-        else if (d.status === 'running') { show('status-running'); }
-        else if (d.status === 'done') {
+        appendLogEntries(d.live_log);
+
+        if (d.status === 'pending') {
+          setStateIndicator('bg-gray-400 animate-pulse', 'Queued…');
+
+        } else if (d.status === 'running') {
+          setStateIndicator('bg-blue-500 animate-pulse', 'Running agent…');
+
+        } else if (d.status === 'done') {
           clearInterval(pollTimer);
+          setStateIndicator('bg-green-500', 'Completed');
+
           document.getElementById('val-reward').textContent  = fmt(d.reward);
           document.getElementById('val-public').textContent  = fmt(d.public_score);
           document.getElementById('val-private').textContent = fmt(d.private_score);
           document.getElementById('val-lint').textContent    = fmt(d.lint_score);
-          var link = document.getElementById('run-detail-link');
-          link.href = '/runs/' + runId + '/';
-          link.classList.remove('hidden');
-          show('status-done');
+          document.getElementById('run-detail-link').href    = '/runs/' + runId + '/';
+          document.getElementById('status-done').classList.remove('hidden');
+          document.getElementById('status-failed').classList.add('hidden');
+
           btn.disabled = false;
-          btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg> Run Again';
+          btn.innerHTML = RUN_SVG + ' Run Again';
+
         } else if (d.status === 'failed') {
           clearInterval(pollTimer);
+          setStateIndicator('bg-red-500', 'Failed');
+
           document.getElementById('val-error').textContent = d.error || 'Unknown error';
-          show('status-failed');
+          document.getElementById('status-failed').classList.remove('hidden');
+          document.getElementById('status-done').classList.add('hidden');
+
           btn.disabled = false;
-          btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg> Run Again';
+          btn.innerHTML = RUN_SVG + ' Run Again';
         }
       });
   }
 
   btn.addEventListener('click', function () {
+    // Reset state for a new run
+    seenCount = 0;
+    document.getElementById('console-output').innerHTML = '';
+    document.getElementById('live-console').classList.add('hidden');
+    document.getElementById('console-count').textContent = '';
+    document.getElementById('status-done').classList.add('hidden');
+    document.getElementById('status-failed').classList.add('hidden');
+
     btn.disabled = true;
     btn.textContent = 'Submitting…';
-    show('status-pending');
+    setStateIndicator('bg-gray-400 animate-pulse', 'Queued…');
+    statusEl.classList.remove('hidden');
 
     var csrf = document.querySelector('#run-form [name=csrfmiddlewaretoken]').value;
     var body = new URLSearchParams({ task_name: meta.task_name, dataset: meta.dataset });
@@ -302,7 +410,8 @@
         if (d.error) {
           alert(d.error);
           btn.disabled = false;
-          btn.innerHTML = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg> Run Agent';
+          btn.innerHTML = RUN_SVG + ' Run Agent';
+          statusEl.classList.add('hidden');
           return;
         }
         btn.textContent = 'Running…';
