@@ -43,6 +43,15 @@ class EpisodeResult:
     agent_error: str | None   # non-timeout exception from agent, if any
     container_logs: str | None = None  # set when episode exits ungracefully
 
+    # Which architecture ran, and what it spent. Read off the agent callable
+    # after the episode, so agents built outside agents.build_agent still work.
+    agent_name: str = "unknown"
+    tokens_used: int = 0
+    token_budget: int | None = None
+    token_usage: dict | None = None
+    budget_exhausted: bool = False
+    timeout_sec: float | None = None   # effective wall-clock budget for this run
+
 
 def run_episode(
     task: Task,
@@ -60,8 +69,12 @@ def run_episode(
     timed_out = False
     agent_error = None
 
+    # Architectures that run several rounds ask for proportionally more
+    # wall-clock via their spec's time_multiplier.
+    timeout_sec = getattr(agent, "suggested_timeout_sec", None)
+
     print("[episode] starting session...")
-    with Session.from_task(task, on_action=on_action) as session:
+    with Session.from_task(task, on_action=on_action, timeout_sec=timeout_sec) as session:
         try:
             agent(session)
         except TimeoutError:
@@ -81,6 +94,8 @@ def run_episode(
         grade = grader.grade(session, task)
     print("[episode] grading complete")
 
+    budget = getattr(agent, "budget", None)
+
     return EpisodeResult(
         task_name=task.name,
         reward=grade.reward,
@@ -90,4 +105,10 @@ def run_episode(
         timed_out=timed_out,
         agent_error=agent_error,
         container_logs=container_logs,
+        agent_name=getattr(agent, "agent_name", "unknown"),
+        tokens_used=budget.total_tokens if budget else 0,
+        token_budget=budget.max_tokens if budget else None,
+        token_usage=budget.snapshot() if budget else None,
+        budget_exhausted=bool(budget and budget.exhausted),
+        timeout_sec=timeout_sec if timeout_sec is not None else task.timeout_sec,
     )

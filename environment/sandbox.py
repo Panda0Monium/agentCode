@@ -86,6 +86,20 @@ class Sandbox:
             if p.is_file()
         )
 
+    def remove_path(self, path: str) -> bool:
+        """
+        Delete a file or directory from the work dir. Returns True if something
+        was removed. Used for harness-side cleanup, not exposed as an agent tool.
+        """
+        target = self._file(path)
+        if target.is_dir():
+            shutil.rmtree(target, ignore_errors=True)
+            return True
+        if target.exists():
+            target.unlink()
+            return True
+        return False
+
     def logs(self) -> str:
         """Return stdout/stderr from the container (best-effort)."""
         if self._container is None:

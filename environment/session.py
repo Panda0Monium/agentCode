@@ -76,13 +76,46 @@ class Session:
         self._record("run_lint", {}, result)
         return result
 
-    def log_llm(self, messages: list, response) -> None:
-        """Record one LLM invoke (prompt + response) into the trajectory."""
+    def log_llm(self, messages: list, response, usage: dict | None = None) -> None:
+        """
+        Record one LLM invoke (prompt + response) into the trajectory.
+
+        ``usage`` carries per-call token counts when the provider reports them.
+        It is folded into the serialized result rather than added as a field on
+        Action, so every existing trajectory consumer keeps working unchanged.
+        """
+        result = _serialize_msg(response)
+        if usage:
+            result["usage"] = usage
         self._record(
             "llm_invoke",
             args={"messages": [_serialize_msg(m) for m in messages]},
-            result=_serialize_msg(response),
+            result=result,
         )
+
+    def remove_path(self, path: str) -> bool:
+        """
+        Delete a path from the repo.
+
+        Not exposed as an agent tool — it exists so an architecture can clean up
+        scaffolding it created for its own use (see the test-driven variant,
+        which must remove its scratch tests before grading).
+        """
+        self._check_timeout()
+        removed = self.sandbox.remove_path(path)
+        self._record("remove_path", {"path": path}, removed)
+        return removed
+
+    def log_note(self, kind: str, text: str, **extra) -> None:
+        """
+        Record a reasoning artefact — a plan, reflection, critique, skeleton.
+
+        These are what distinguish one architecture from another, so they belong
+        in the trajectory alongside tool calls. A single action type with a
+        ``kind`` discriminator keeps every downstream consumer (reports, the web
+        viewer, the live console) working as new architectures add new kinds.
+        """
+        self._record("agent_note", {"kind": kind, "text": text, **extra}, None)
 
     # ------------------------------------------------------------------
     # Introspection
@@ -106,13 +139,28 @@ class Session:
     # ------------------------------------------------------------------
 
     @classmethod
-    def from_task(cls, task: "Task", on_action: Optional[Callable] = None) -> "Session":  # noqa: F821
+    def from_task(
+        cls,
+        task: "Task",  # noqa: F821
+        on_action: Optional[Callable] = None,
+        timeout_sec: Optional[float] = None,
+    ) -> "Session":
+        """
+        ``timeout_sec`` overrides the task's wall-clock budget. Multi-round
+        architectures legitimately need longer than a single-pass one; without
+        an override they would be recorded as timing out for reasons unrelated
+        to how well they reason.
+        """
         sandbox = Sandbox(task.repo_path, image=task.docker_image).start()
         # Public tests are visible to the agent; private tests are injected by the grader only.
         public_tests = task.tests_path / "public"
         if public_tests.exists():
             sandbox.inject_dir(public_tests, "tests/public")
-        return cls(sandbox=sandbox, timeout_sec=task.timeout_sec, on_action=on_action)
+        return cls(
+            sandbox=sandbox,
+            timeout_sec=timeout_sec if timeout_sec is not None else task.timeout_sec,
+            on_action=on_action,
+        )
 
     def close(self) -> None:
         self.sandbox.stop()

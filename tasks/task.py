@@ -38,6 +38,9 @@ class Task:
     repo_path: Path
     tests_path: Path
     docker_image: str = "agentcode-sandbox"
+    max_tokens: int | None = None
+    """Optional per-task token ceiling. When unset, the budget is derived from
+    difficulty (see agents.budget.default_budget_for)."""
 
     @classmethod
     def load(cls, task_dir: str | Path) -> "Task":
@@ -62,4 +65,5 @@ class Task:
             repo_path=task_dir / "repo",
             tests_path=task_dir / "tests",
             docker_image=data.get("docker_image", "agentcode-sandbox"),
+            max_tokens=data.get("max_tokens"),
         )
