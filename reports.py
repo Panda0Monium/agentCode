@@ -28,7 +28,9 @@ def write_report(task: Task, result: EpisodeResult) -> Path:
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
     ts_display = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
 
-    run_dir = Path("output") / "episodes" / f"{task.name}_{timestamp}"
+    # The architecture is part of the directory name: sweeping one task across
+    # several architectures otherwise writes them all into the same second.
+    run_dir = Path("output") / "episodes" / f"{task.name}_{result.agent_name}_{timestamp}"
     run_dir.mkdir(parents=True, exist_ok=True)
 
     g = result.grade
@@ -40,6 +42,12 @@ def write_report(task: Task, result: EpisodeResult) -> Path:
     # ------------------------------------------------------------------
     tool_counts: Counter = Counter(a.tool for a in trajectory)
     llm_turns = tool_counts.get("llm_invoke", 0)
+
+    # Reasoning artefacts all share the agent_note tool, so break them down by
+    # kind — otherwise a plan, a reflection and a critique are indistinguishable.
+    note_counts: Counter = Counter(
+        a.args.get("kind", "unknown") for a in trajectory if a.tool == "agent_note"
+    )
 
     files_read = list(dict.fromkeys(
         a.args["path"] for a in trajectory
@@ -219,17 +227,28 @@ def write_report(task: Task, result: EpisodeResult) -> Path:
     # ------------------------------------------------------------------
     # summary.json
     # ------------------------------------------------------------------
-    budget_sec = task.timeout_sec
+    # The effective wall-clock budget, which multi-round architectures scale up
+    # via their time_multiplier. Using task.timeout_sec here would make
+    # budget_utilization read >1.0 for every such run.
+    budget_sec = result.timeout_sec or task.timeout_sec
     summary_doc = {
         "task": task.name,
         "task_instruction": task.instruction,
         "task_difficulty": task.difficulty,
         "task_language": task.language,
         "model": model,
+        "agent": result.agent_name,
         "timestamp": ts_display,
         "elapsed_sec": round(result.elapsed_sec, 2),
         "budget_sec": budget_sec,
         "budget_utilization": round(result.elapsed_sec / budget_sec, 4) if budget_sec else None,
+        "token_budget": result.token_budget,
+        "tokens_used": result.tokens_used,
+        "token_utilization": (
+            round(result.tokens_used / result.token_budget, 4) if result.token_budget else None
+        ),
+        "token_usage": result.token_usage,
+        "budget_exhausted": result.budget_exhausted,
         "timed_out": result.timed_out,
         "agent_error": result.agent_error,
         "reward": result.reward,
@@ -255,6 +274,7 @@ def write_report(task: Task, result: EpisodeResult) -> Path:
             "lint": w.lint,
         },
         "tool_counts": dict(tool_counts),
+        "note_counts": dict(note_counts),
         "llm_turns": llm_turns,
         "files_read": files_read,
         "files_written": files_written,
@@ -274,13 +294,14 @@ def write_report(task: Task, result: EpisodeResult) -> Path:
     return summary_path
 
 
-def write_bulk_report(rows: list[dict]) -> Path:
+def write_bulk_report(rows: list[dict], by_agent: dict | None = None) -> Path:
     timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")
     ts_display = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
     out_dir = Path("output") / "eval" / timestamp
     out_dir.mkdir(parents=True, exist_ok=True)
 
     n = len(rows)
+    agents = list(dict.fromkeys(r["agent"] for r in rows if r.get("agent")))
     doc = {
         "meta": {
             "timestamp": ts_display,
@@ -291,6 +312,11 @@ def write_bulk_report(rows: list[dict]) -> Path:
             "avg_lint_score": round(sum(r["lint_score"] for r in rows) / n, 4) if n else 0.0,
             "n_timed_out": sum(1 for r in rows if r["timed_out"]),
             "n_agent_errors": sum(1 for r in rows if r["agent_error"]),
+            # Per-architecture breakdown. This is what makes a sweep readable:
+            # the aggregate above mixes architectures together and hides the
+            # comparison the run was performed to make.
+            "agents": agents,
+            "by_agent": by_agent or {},
         },
         "results": rows,
     }
