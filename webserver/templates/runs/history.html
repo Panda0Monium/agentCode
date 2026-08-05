@@ -20,6 +20,7 @@
         <div class="flex items-center gap-3 min-w-0">
           <span class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors truncate">{{ run.task_name }}</span>
           <span class="text-xs font-mono bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 px-2 py-0.5 rounded shrink-0">{{ run.dataset }}</span>
+          <span class="text-xs font-mono bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded shrink-0">{{ run.architecture }}</span>
         </div>
         <div class="flex items-center gap-3 shrink-0">
           {% if run.status == 'done' %}
@@ -35,10 +36,12 @@
         </div>
       </div>
 
-      <!-- Model name -->
-      {% if run.user.model_name %}
-      <p class="text-xs text-gray-400 dark:text-gray-500 mb-3 font-mono">{{ run.user.model_name }}</p>
-      {% endif %}
+      <!-- Model name: snapshotted on the run, falling back to the user's
+           current setting for runs recorded before that was stored. -->
+      <p class="text-xs text-gray-400 dark:text-gray-500 mb-3 font-mono">
+        {% firstof run.model_name run.user.model_name %}
+        {% if run.tokens_used %}<span class="ml-2">· {{ run.tokens_used }} tokens{% if run.budget_exhausted %} (capped){% endif %}</span>{% endif %}
+      </p>
 
       <!-- Score row -->
       {% if run.status == 'done' and run.reward is not None %}

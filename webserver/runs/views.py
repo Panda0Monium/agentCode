@@ -1,4 +1,5 @@
 from allauth.socialaccount.models import SocialAccount, SocialToken
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, render
@@ -6,8 +7,31 @@ from django.utils.decorators import method_decorator
 from django.views import View
 from django_q.tasks import async_task
 
+from .agentcode import architecture_names
 from .models import Run
 from .tasks import execute_run
+
+# Floor keeps a typo like "100" from producing a run that dies on its first
+# call; the ceiling stops one user's sweep from burning an unbounded budget.
+MIN_TOKEN_BUDGET = 10_000
+
+
+def _max_token_budget() -> int:
+    return getattr(settings, 'AGENTCODE_MAX_TOKEN_BUDGET', 400_000)
+
+
+def _parse_token_budget(raw: str) -> tuple[int | None, str | None]:
+    """Return (budget, error). A blank value means 'use the task default'."""
+    raw = (raw or '').strip()
+    if not raw:
+        return None, None
+    try:
+        value = int(raw)
+    except ValueError:
+        return None, 'max_tokens must be a whole number.'
+    if value < MIN_TOKEN_BUDGET:
+        return None, f'max_tokens must be at least {MIN_TOKEN_BUDGET}.'
+    return min(value, _max_token_budget()), None
 
 
 def _resolve_api_key(user):
@@ -31,6 +55,14 @@ class SubmitRunView(View):
         if not task_name or not dataset:
             return JsonResponse({'error': 'Missing task_name or dataset.'}, status=400)
 
+        architecture = (request.POST.get('architecture') or 'react').strip()
+        if architecture not in architecture_names():
+            return JsonResponse({'error': f'Unknown agent architecture: {architecture}'}, status=400)
+
+        token_budget, budget_error = _parse_token_budget(request.POST.get('max_tokens'))
+        if budget_error:
+            return JsonResponse({'error': budget_error}, status=400)
+
         user = request.user
         if not user.is_model_configured:
             return JsonResponse({'error': 'Model not configured. Go to Settings first.'}, status=400)
@@ -40,7 +72,16 @@ class SubmitRunView(View):
                 'error': 'HuggingFace session token not found. Please log out and sign in again with Hugging Face.'
             }, status=400)
 
-        run = Run.objects.create(user=user, task_name=task_name, dataset=dataset)
+        run = Run.objects.create(
+            user=user,
+            task_name=task_name,
+            dataset=dataset,
+            architecture=architecture,
+            token_budget=token_budget,
+            # Snapshot the model so history reflects what actually ran, not
+            # whatever the user happens to have configured when they look later.
+            model_name=user.model_name,
+        )
         async_task(execute_run, run.pk)
         return JsonResponse({'run_id': str(run.uuid)})
 

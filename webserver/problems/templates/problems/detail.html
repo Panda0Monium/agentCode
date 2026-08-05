@@ -88,6 +88,35 @@
           </button>
         </div>
 
+        <!-- Agent architecture -->
+        <div class="mb-3">
+          <label for="agent-select" class="block text-xs text-gray-400 dark:text-gray-500 mb-1">Agent architecture</label>
+          <select id="agent-select"
+            class="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800
+                   text-gray-700 dark:text-gray-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            {% for a in architectures %}
+              <option value="{{ a.name }}" title="{{ a.description }}">{{ a.label }}</option>
+            {% endfor %}
+          </select>
+          <p id="agent-desc" class="mt-1 text-xs text-gray-400 dark:text-gray-500"></p>
+        </div>
+
+        <!-- Advanced -->
+        <details class="mb-4">
+          <summary class="text-xs text-gray-400 dark:text-gray-500 cursor-pointer select-none hover:text-gray-600 dark:hover:text-gray-300">
+            Advanced
+          </summary>
+          <div class="mt-2">
+            <label for="token-budget" class="block text-xs text-gray-400 dark:text-gray-500 mb-1">Max tokens</label>
+            <input id="token-budget" type="number" min="10000" step="10000"
+              class="w-full text-sm rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800
+                     text-gray-700 dark:text-gray-200 px-2.5 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500">
+            <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
+              Defaults to this problem's difficulty. Multi-round architectures spend more.
+            </p>
+          </div>
+        </details>
+
         <!-- Status section -->
         <div id="run-status" class="hidden mt-1 space-y-3">
 
@@ -252,6 +281,25 @@
 
   var RUN_SVG = '<svg class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z"/></svg>';
 
+  // ── AGENT ARCHITECTURE PICKER ────────────────────────────────────────
+  (function initAgentPicker() {
+    var sel  = document.getElementById('agent-select');
+    var desc = document.getElementById('agent-desc');
+    var budget = document.getElementById('token-budget');
+    if (budget && meta.default_token_budget) budget.placeholder = meta.default_token_budget;
+    if (!sel || !desc) return;
+
+    var byName = {};
+    (meta.architectures || []).forEach(function(a) { byName[a.name] = a; });
+
+    function showDesc() {
+      var a = byName[sel.value];
+      desc.textContent = a ? a.description : '';
+    }
+    sel.addEventListener('change', showDesc);
+    showDesc();
+  })();
+
   function fmt(v) {
     return v === null || v === undefined ? '—' : (v * 100).toFixed(1) + '%';
   }
@@ -402,7 +450,15 @@
     statusEl.classList.remove('hidden');
 
     var csrf = document.querySelector('#run-form [name=csrfmiddlewaretoken]').value;
-    var body = new URLSearchParams({ task_name: meta.task_name, dataset: meta.dataset });
+    var agentSel = document.getElementById('agent-select');
+    var budgetEl = document.getElementById('token-budget');
+    var body = new URLSearchParams({
+      task_name:    meta.task_name,
+      dataset:      meta.dataset,
+      architecture: agentSel ? agentSel.value : 'react',
+    });
+    // Blank means "use the task default" — don't send an empty string.
+    if (budgetEl && budgetEl.value.trim()) body.set('max_tokens', budgetEl.value.trim());
 
     fetch('/runs/submit/', { method: 'POST', headers: {'X-CSRFToken': csrf}, body: body })
       .then(function(r) { return r.json(); })

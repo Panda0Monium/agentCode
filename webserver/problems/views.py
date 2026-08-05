@@ -6,6 +6,8 @@ from django.views.generic import TemplateView
 from rest_framework.views import APIView
 from rest_framework.response import Response
 
+from runs.agentcode import available_architectures, default_token_budget
+
 from .services import get_all_problems, get_problem_by_id, get_problems_grouped
 from .serializers import ProblemSummarySerializer, ProblemDetailSerializer
 
@@ -32,9 +34,17 @@ class ProblemDetailTemplateView(TemplateView):
         ctx["problem"] = problem
         ctx["instruction_json"]  = mark_safe(json.dumps(problem["instruction"]))
         ctx["stub_files_json"]   = mark_safe(json.dumps(problem.get("stub_files", [])))
+
+        # Architecture choices come from the registry, so a newly registered
+        # variant appears in the dropdown without touching this view or the
+        # template.
+        architectures = available_architectures()
+        ctx["architectures"] = architectures
         ctx["problem_meta_json"] = mark_safe(json.dumps({
             "task_name": f"{problem['dataset']}/{problem['name']}",
             "dataset":   problem["dataset"],
+            "architectures": architectures,
+            "default_token_budget": default_token_budget(problem.get("difficulty", "")),
         }))
         return ctx
 

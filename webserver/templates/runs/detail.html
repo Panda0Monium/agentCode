@@ -34,12 +34,22 @@
   <!-- Metadata row -->
   <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-gray-500 dark:text-gray-400 mb-5">
     <span class="font-mono text-xs bg-gray-100 dark:bg-gray-800 px-2 py-0.5 rounded">{{ run.dataset }}</span>
+    <span class="font-mono text-xs bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded">{{ run.architecture }}</span>
     <span class="text-gray-300 dark:text-gray-600">·</span>
     <span>{{ run.created_at|date:"M d, Y H:i" }}</span>
     <span class="text-gray-300 dark:text-gray-600">·</span>
     <span id="meta-elapsed" class="tabular-nums">—</span>
     <span class="text-gray-300 dark:text-gray-600">·</span>
     <span><span id="meta-turns" class="tabular-nums">—</span> LLM turns</span>
+    {% if run.tokens_used %}
+    <span class="text-gray-300 dark:text-gray-600">·</span>
+    <span class="tabular-nums">
+      {{ run.tokens_used }}{% if run.token_budget %} / {{ run.token_budget }}{% endif %} tokens
+      {% if run.budget_exhausted %}
+        <span class="ml-1 text-amber-600 dark:text-amber-400" title="The agent hit its token budget and stopped early.">(capped)</span>
+      {% endif %}
+    </span>
+    {% endif %}
   </div>
 
   {% if run.status == 'done' %}
@@ -210,6 +220,7 @@
   var ICONS = {
     llm_invoke: '🤖', write_file: '✏️', read_file: '📖',
     run_tests: '🧪', run_lint: '🔍', list_files: '📁',
+    agent_note: '🧭',
   };
   var TOOL_TAG_COLORS = {
     llm_invoke:  'text-purple-500 dark:text-purple-400',
@@ -218,6 +229,14 @@
     run_tests:   'text-green-600 dark:text-green-400',
     run_lint:    'text-amber-600 dark:text-amber-400',
     list_files:  'text-gray-500 dark:text-gray-400',
+    agent_note:  'text-indigo-500 dark:text-indigo-400',
+  };
+  // Reasoning artefacts emitted by the non-ReAct architectures.
+  var NOTE_LABELS = {
+    plan: 'Plan', skeleton: 'Skeleton', reflection: 'Reflection',
+    critique: 'Critique', test_plan: 'Test plan', cleanup: 'Cleanup',
+    attempt: 'Attempt', phase: 'Phase', budget_exhausted: 'Budget exhausted',
+    approval_overridden: 'Approval overridden',
   };
 
   function stepSummary(s) {
@@ -230,6 +249,11 @@
     if (s.tool === 'list_files')  return 'Listed files';
     if (s.tool === 'run_tests')   return s.passed + '/' + s.total + ' passed';
     if (s.tool === 'run_lint')    return (s.errors && s.errors.length) ? s.errors.length + ' error(s)' : 'clean';
+    if (s.tool === 'agent_note') {
+      var label = NOTE_LABELS[s.kind] || s.kind;
+      var head  = (s.text || '').split('\n')[0].slice(0, 60);
+      return esc(head ? label + ' — ' + head : label);
+    }
     return s.tool;
   }
 
@@ -698,6 +722,19 @@
     }
     if (s.tool === 'list_files' && s.files && s.files.length) {
       return s.files.map(function(f) { return '<div class="text-gray-400 text-xs">' + esc(f) + '</div>'; }).join('');
+    }
+    if (s.tool === 'agent_note') {
+      if (!s.text) return null;
+      var metaBits = '';
+      if (s.meta) {
+        metaBits = Object.keys(s.meta).map(function(k) {
+          return '<span class="text-gray-500 mr-3">' + esc(k) + ': <span class="text-indigo-400">' +
+            esc(String(s.meta[k])) + '<\span></span>';
+        }).join('');
+        if (metaBits) metaBits = '<div class="text-xs mb-2">' + metaBits + '</div>';
+      }
+      return metaBits +
+        '<pre class="text-gray-300 text-xs whitespace-pre-wrap break-words">' + esc(s.text) + '</pre>';
     }
     return null;
   }

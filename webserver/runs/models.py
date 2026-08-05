@@ -27,6 +27,23 @@ class Run(models.Model):
     started_at    = models.DateTimeField(null=True, blank=True)
     completed_at  = models.DateTimeField(null=True, blank=True)
 
+    # Which agent architecture this run used, and what it cost. Recorded on the
+    # Run rather than read off the user at display time — a run is a historical
+    # fact, and must not change when the user later edits their settings.
+    architecture     = models.CharField(max_length=40, default='react', db_index=True)
+    model_name       = models.CharField(max_length=200, blank=True)
+    token_budget     = models.IntegerField(null=True, blank=True)
+    tokens_used      = models.IntegerField(default=0)
+    token_usage      = models.JSONField(null=True, blank=True)
+    budget_exhausted = models.BooleanField(default=False)
+
+    @property
+    def token_utilization(self):
+        """Fraction of the token budget spent, or None when unbudgeted."""
+        if not self.token_budget:
+            return None
+        return min(1.0, self.tokens_used / self.token_budget)
+
     @property
     def error_summary(self):
         if not self.error:

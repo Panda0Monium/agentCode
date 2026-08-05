@@ -112,12 +112,21 @@ SOCIALACCOUNT_PROVIDERS = {
     },
 }
 
+# Ceiling on the per-run token budget a user may request. Multi-round
+# architectures (reflexion, critic-actor) can spend several times what a single
+# ReAct pass does, and runs are billed against user-supplied API keys.
+AGENTCODE_MAX_TOKEN_BUDGET = int(os.environ.get('AGENTCODE_MAX_TOKEN_BUDGET', 400_000))
+
 # Django Q — uses SQLite as broker, no Redis needed
 Q_CLUSTER = {
     'name': 'AgentCode',
     'workers': 2,
-    'timeout': 600,
-    'retry': 700,   # must be > timeout to avoid re-triggering mid-run tasks
+    # Multi-round architectures (reflexion, tdd, critic_actor) scale the task
+    # timeout by their time_multiplier, so an episode can legitimately run well
+    # past the old 600s. If this is too low the cluster kills and re-queues a
+    # run mid-episode.
+    'timeout': 1800,
+    'retry': 1900,  # must be > timeout to avoid re-triggering mid-run tasks
     'orm': 'default',
 }
 

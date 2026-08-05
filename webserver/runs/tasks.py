@@ -1,18 +1,12 @@
 import logging
 import os
-import sys
 import traceback
-from pathlib import Path
+
+# Puts the agentCode root on sys.path and loads .env, so runner/agents/tasks
+# are importable from here. Shared with views.py.
+from .agentcode import ROOT as _ROOT
 
 logger = logging.getLogger('runs')
-
-# Make the agentCode root importable (runner, agent, tasks, etc. live there)
-_ROOT = Path(__file__).resolve().parent.parent.parent
-if str(_ROOT) not in sys.path:
-    sys.path.insert(0, str(_ROOT))
-
-from dotenv import load_dotenv
-load_dotenv(_ROOT / '.env')
 
 
 def _make_live_entry(action) -> dict:
@@ -49,6 +43,10 @@ def _make_live_entry(action) -> dict:
         if isinstance(r, dict):
             return {'tool': 'lint', 'ts': ts, 'errors': len(r.get('errors', []))}
         return {'tool': 'lint', 'ts': ts, 'errors': 0}
+    if tool == 'agent_note':
+        kind = action.args.get('kind', 'note')
+        text = (action.args.get('text') or '').strip()
+        return {'tool': 'note', 'ts': ts, 'kind': kind, 'text': text[:160]}
     return {'tool': tool, 'ts': ts}
 
 
@@ -58,7 +56,7 @@ def execute_run(run_id: int) -> None:
     from runs.trajectory import process as process_trajectory
     from tasks.task import Task
     from runner import run_episode
-    from agent import coding_agent
+    from agents import build_agent
 
     # Atomically claim the run — only one worker wins this UPDATE.
     # If another worker already claimed it, updated=0 and we bail out.
@@ -110,7 +108,9 @@ def execute_run(run_id: int) -> None:
             live_log.append(_make_live_entry(action))
             Run.objects.filter(pk=run_id).update(live_log=live_log)
 
-        result = run_episode(task, coding_agent(task.instruction), on_action=on_action)
+        agent = build_agent(run.architecture, task, max_tokens=run.token_budget)
+
+        result = run_episode(task, agent, on_action=on_action)
 
         if result.agent_error:
             logger.error('Run %s agent error:\n%s', run.uuid, result.agent_error)
@@ -123,6 +123,12 @@ def execute_run(run_id: int) -> None:
         run.trajectory    = process_trajectory(result.trajectory)
         run.error         = result.agent_error or ''
         run.completed_at  = timezone.now()
+        # Persist the *resolved* budget, not the requested one, so a run
+        # submitted without an override still records what it was allowed.
+        run.token_budget      = run.token_budget or result.token_budget
+        run.tokens_used       = result.tokens_used
+        run.token_usage       = result.token_usage
+        run.budget_exhausted  = result.budget_exhausted
         run.save()
 
     except Exception:

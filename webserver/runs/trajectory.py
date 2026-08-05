@@ -104,4 +104,23 @@ def process(actions: list) -> dict:
             files = result if isinstance(result, list) else []
             steps.append({'tool': 'list_files', 'timestamp': ts, 'files': files})
 
+        elif tool == 'agent_note':
+            # Reasoning artefacts — plans, reflections, critiques, skeletons.
+            # The 'kind' discriminator is what distinguishes them, so new
+            # architectures can add kinds without touching this function.
+            meta = {k: v for k, v in args.items() if k not in ('kind', 'text')}
+            steps.append({
+                'tool':      'agent_note',
+                'timestamp': ts,
+                'kind':      args.get('kind', 'note'),
+                'text':      (args.get('text') or '')[:3000],
+                'meta':      meta,
+            })
+
+        else:
+            # Never drop a step. Without this, any action type the viewer
+            # doesn't recognise vanishes from the timeline, which silently
+            # misrepresents what the agent did.
+            steps.append({'tool': tool, 'timestamp': ts})
+
     return {'steps': steps}
