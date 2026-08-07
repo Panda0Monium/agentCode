@@ -6,6 +6,7 @@ rollup, stopping short of actually launching episodes.
 """
 
 import json
+import time
 from pathlib import Path
 
 import pytest
@@ -135,6 +136,49 @@ def test_bulk_report_carries_the_comparison_block(tmp_path, monkeypatch):
     assert doc["meta"]["by_agent"]["reflexion"]["avg_reward"] == 0.9
     # results rows stay exactly as handed in — additive only
     assert doc["results"] == rows
+
+
+# ------------------------------------------------------------------
+# Concurrent output capture
+# ------------------------------------------------------------------
+
+def test_concurrent_captures_do_not_clobber_each_other():
+    """
+    Regression: run_task captured stdout with contextlib.redirect_stdout, which
+    swaps the *global* sys.stdout. Under --workers > 1 the episodes overwrote
+    each other's capture and whole episodes silently vanished from the console
+    while still appearing in the report.
+    """
+    import sys
+    from concurrent.futures import ThreadPoolExecutor
+
+    real_stdout = sys.stdout
+    proxy = cli._install_stdout_proxy()
+    try:
+        def work(n):
+            with cli._capture() as buf:
+                print(f"episode-{n}")
+                time.sleep(0.01)          # force the threads to interleave
+                print(f"done-{n}")
+            return buf.getvalue()
+
+        with ThreadPoolExecutor(max_workers=8) as ex:
+            results = list(ex.map(work, range(8)))
+
+        for n, text in enumerate(results):
+            assert text == f"episode-{n}\ndone-{n}\n", f"thread {n} captured: {text!r}"
+    finally:
+        sys.stdout = real_stdout
+        cli._proxy = None
+        assert proxy is not None
+
+
+def test_capture_works_without_the_proxy_installed():
+    # The single-episode path never installs the proxy.
+    assert cli._proxy is None
+    with cli._capture() as buf:
+        print("solo")
+    assert buf.getvalue() == "solo\n"
 
 
 def test_bulk_report_without_a_sweep_still_works(tmp_path, monkeypatch):

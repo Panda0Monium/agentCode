@@ -57,14 +57,22 @@ def build(ctx: AgentContext) -> Callable[[Session], None]:
         for attempt in range(1, max_attempts + 1):
             session.log_note("attempt", f"Attempt {attempt} of {max_attempts}", attempt=attempt)
 
-            messages = [SystemMessage(content=REFLEXION_SYSTEM)]
+            # Carried-forward reflections are folded into the single system
+            # message rather than appended as a second one. Providers behind
+            # litellm reject "System message must be at the beginning" when two
+            # system messages appear in a row, which silently broke every
+            # attempt after the first — the whole point of this architecture.
+            system = REFLEXION_SYSTEM
             if reflections:
-                messages.append(SystemMessage(content=REFLEXION_CARRY_OVER.format(
+                system += "\n\n" + REFLEXION_CARRY_OVER.format(
                     attempt=attempt,
                     reflections="\n".join(f"- {r}" for r in reflections),
                     files=", ".join(files_written(session)) or "(none)",
-                )))
-            messages.append(HumanMessage(content=ctx.instruction))
+                )
+            messages = [
+                SystemMessage(content=system),
+                HumanMessage(content=ctx.instruction),
+            ]
 
             run_tool_loop(conv, messages, max_turns=attempt_turns)
 

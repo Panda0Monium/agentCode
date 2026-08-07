@@ -123,6 +123,10 @@ def execute_run(run_id: int) -> None:
         run.trajectory    = process_trajectory(result.trajectory)
         run.error         = result.agent_error or ''
         run.completed_at  = timezone.now()
+        # `run` was loaded before the episode, so its in-memory live_log is the
+        # stale pre-run value. Without this, the save below writes that back and
+        # erases everything on_action recorded while the agent was working.
+        run.live_log      = live_log
         # Persist the *resolved* budget, not the requested one, so a run
         # submitted without an override still records what it was allowed.
         run.token_budget      = run.token_budget or result.token_budget

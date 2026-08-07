@@ -17,8 +17,9 @@ architectures and writes a by_agent comparison block into the bulk report.
 import argparse
 import io
 import sys
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from contextlib import redirect_stdout
+from contextlib import contextmanager, redirect_stdout
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -29,14 +30,75 @@ from runner import run_episode
 from tasks import Task
 
 
+class _ThreadLocalStdout:
+    """
+    A stdout stand-in that routes each thread's writes to its own buffer.
+
+    ``contextlib.redirect_stdout`` swaps the *global* ``sys.stdout``, so
+    concurrent episodes overwrite each other's capture and output is silently
+    lost — during a sweep, entire episodes vanish from the console while the
+    results still land in the report. This proxy is installed once and
+    dispatches per thread instead.
+    """
+
+    def __init__(self, real):
+        self._real = real
+        self._local = threading.local()
+
+    def _target(self):
+        return getattr(self._local, "buf", None) or self._real
+
+    def write(self, s):
+        return self._target().write(s)
+
+    def flush(self):
+        return self._target().flush()
+
+    def __getattr__(self, name):
+        return getattr(self._real, name)
+
+    @contextmanager
+    def capture(self):
+        prev = getattr(self._local, "buf", None)
+        buf = io.StringIO()
+        self._local.buf = buf
+        try:
+            yield buf
+        finally:
+            self._local.buf = prev
+
+
+_proxy: _ThreadLocalStdout | None = None
+
+
+def _install_stdout_proxy() -> _ThreadLocalStdout:
+    """Installed only for parallel runs, so importing this module is harmless."""
+    global _proxy
+    if _proxy is None:
+        _proxy = _ThreadLocalStdout(sys.stdout)
+        sys.stdout = _proxy
+    return _proxy
+
+
+@contextmanager
+def _capture():
+    """Capture this thread's stdout, whether or not the proxy is installed."""
+    if _proxy is not None:
+        with _proxy.capture() as buf:
+            yield buf
+    else:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            yield buf
+
+
 def run_task(
     task_dir: Path,
     agent_name: str = "react",
     bulk: bool = False,
     max_tokens: int | None = None,
 ) -> tuple[str, dict | None]:
-    buf = io.StringIO()
-    with redirect_stdout(buf):
+    with _capture() as buf:
         task = Task.load(task_dir)
 
         # Imported lazily so the provider client is only built when an
@@ -68,7 +130,11 @@ def run_task(
         else:
             print(f"Task:    {task.name}  ({task.difficulty})")
             print(f"Agent:   {result.agent_name}")
-            print(f"Timeout: {task.timeout_sec}s")
+            # The effective budget, which multi-round architectures scale up —
+            # printing the task's raw timeout here reads as a missed timeout.
+            effective = result.timeout_sec or task.timeout_sec
+            scaled = "" if effective == task.timeout_sec else f"  (task {task.timeout_sec}s x{effective / task.timeout_sec:g})"
+            print(f"Timeout: {effective}s{scaled}")
             print(f"Tokens:  {result.tokens_used} / {result.token_budget or 'unlimited'}"
                   f"{'  [EXHAUSTED]' if result.budget_exhausted else ''}\n")
             print("-" * 40)
@@ -233,6 +299,10 @@ def main():
 
     print(f"Running {len(task_dirs)} task(s) x {len(agents_to_run)} architecture(s) "
           f"= {len(jobs)} episodes ({args.workers} workers)\n")
+
+    # Episodes run concurrently and each captures its own stdout; without this
+    # they would fight over the global one and lose each other's output.
+    _install_stdout_proxy()
 
     all_metrics: list[dict] = []
     with ThreadPoolExecutor(max_workers=args.workers) as executor:

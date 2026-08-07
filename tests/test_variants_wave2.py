@@ -118,6 +118,51 @@ def test_reflexion_respects_its_attempt_cap(monkeypatch):
     assert session.note_kinds().count("reflection") == 1
 
 
+def test_reflexion_sends_exactly_one_system_message(monkeypatch):
+    """
+    Regression: reflections used to be appended as a *second* SystemMessage.
+    Providers behind litellm reject that with "System message must be at the
+    beginning", so every attempt after the first died — silently disabling the
+    retry loop this architecture exists for, while the episode still graded on
+    attempt 1's work and looked fine.
+    """
+    session = FakeSession(files=dict(STUB), test_results=[failing_tests(0, 3)], lint_results=[clean_lint()])
+    ctx = AgentContext(instruction="Implement solve().", options={"max_attempts": 3})
+
+    conv = _patch_conv(monkeypatch, reflexion, session,
+                       tool_responses=_done(3), text_responses=["Lesson one.", "Lesson two."])
+    reflexion.build(ctx)(session)
+
+    for msgs in conv.tool_llm.calls:
+        systems = [m for m in msgs if getattr(m, "type", None) == "system"]
+        assert len(systems) == 1, f"{len(systems)} system messages sent"
+        assert getattr(msgs[0], "type", None) == "system"
+
+
+@pytest.mark.parametrize("name", ["react", "plan_execute", "skeleton", "reflexion", "tdd", "critic_actor"])
+def test_no_architecture_sends_a_trailing_system_message(name, monkeypatch):
+    """
+    Same constraint, checked across the board: a system message may only appear
+    at position 0, never after a human/ai/tool turn.
+    """
+    import importlib
+
+    module = importlib.import_module(f"agents.{name}")
+    session = FakeSession(files=dict(STUB), test_results=[failing_tests(0, 3)], lint_results=[clean_lint()])
+    ctx = AgentContext(instruction="Implement solve().",
+                       options={"max_attempts": 2, "max_rounds": 2})
+
+    conv = _patch_conv(monkeypatch, module, session,
+                       tool_responses=[ai(content="done") for _ in range(40)],
+                       text_responses=["1. do the thing" for _ in range(40)])
+    module.build(ctx)(session)
+
+    for msgs in conv.tool_llm.calls + conv.llm.calls:
+        for i, m in enumerate(msgs):
+            if getattr(m, "type", None) == "system":
+                assert i == 0, f"{name}: system message at index {i} of {len(msgs)}"
+
+
 def test_reflexion_carries_reflections_into_later_attempts(monkeypatch):
     session = FakeSession(files=dict(STUB), test_results=[failing_tests(0, 3)], lint_results=[clean_lint()])
     ctx = AgentContext(instruction="Implement solve().", options={"max_attempts": 3})
