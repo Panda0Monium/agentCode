@@ -89,3 +89,56 @@ def test_deprecated_shim_still_builds_a_react_agent():
 
 def test_default_agent_is_react():
     assert agents.DEFAULT_AGENT == "react"
+
+
+# ------------------------------------------------------------------
+# Controlled constants across architectures
+# ------------------------------------------------------------------
+
+def test_every_terminal_prompt_uses_the_same_stop_mandate():
+    """
+    The architecture is the independent variable; the finish line is not.
+    VERIFY_SYSTEM once said "Keep going until tests pass and lint is clean"
+    while ReAct said "stop when" — so plan_execute/skeleton/tdd burned their
+    whole verify budget on tasks where ReAct stopped early, and the difference
+    looked like an architectural result.
+    """
+    from agents import prompts
+
+    terminal = {
+        "REACT_SYSTEM": prompts.REACT_SYSTEM,
+        "VERIFY_SYSTEM": prompts.VERIFY_SYSTEM,
+        "REFLEXION_SYSTEM": prompts.REFLEXION_SYSTEM,
+    }
+    for name, text in terminal.items():
+        assert prompts.STOP_MANDATE in text, f"{name} does not carry the shared stop mandate"
+
+
+def test_no_terminal_prompt_invents_its_own_finish_line():
+    from agents import prompts
+
+    for name in ("VERIFY_SYSTEM", "REFLEXION_SYSTEM"):
+        text = getattr(prompts, name).lower()
+        assert "keep going until" not in text, f"{name} reintroduced a divergent mandate"
+
+
+def test_harness_success_predicate_is_shared():
+    # The prompt-level mandate is only half of it; architectures that decide
+    # for themselves when to stop must agree on the same condition.
+    from agents.base import is_solved
+    from tests.fakes import clean_lint, dirty_lint, failing_tests, passing_tests
+
+    assert is_solved(passing_tests(3), clean_lint()) is True
+    assert is_solved(failing_tests(1, 2), clean_lint()) is False
+    assert is_solved(passing_tests(3), dirty_lint(1)) is False
+
+
+def test_is_solved_rejects_an_empty_suite():
+    # 0/0 passing is not success; it usually means collection failed.
+    from environment.schemas import TestResult
+
+    from agents.base import is_solved
+    from tests.fakes import clean_lint
+
+    empty = TestResult(passed=0, failed=0, errors=0, cases=[], stdout="")
+    assert is_solved(empty, clean_lint()) is False

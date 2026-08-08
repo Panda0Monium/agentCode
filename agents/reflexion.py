@@ -32,6 +32,7 @@ from .base import (
     ask,
     files_written,
     ground_truth,
+    is_solved,
     run_tool_loop,
 )
 from .prompts import (
@@ -78,8 +79,7 @@ def build(ctx: AgentContext) -> Callable[[Session], None]:
 
             # Ground truth, straight from the harness.
             tests, lint = ground_truth(session)
-            solved = tests.total > 0 and tests.passed == tests.total and not lint.errors
-            if solved:
+            if is_solved(tests, lint):
                 session.log_note(
                     "attempt",
                     f"Solved on attempt {attempt}: {tests.passed}/{tests.total} tests, lint clean.",

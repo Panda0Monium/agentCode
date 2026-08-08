@@ -10,7 +10,16 @@ produced with these exact bytes, and changing them silently invalidates
 comparisons against the ReAct baseline.
 """
 
-REACT_SYSTEM = """\
+# The single condition under which any architecture considers itself finished.
+#
+# This is a controlled constant, not a per-architecture choice. The benchmark
+# varies the architecture and holds everything else fixed, so if one variant is
+# told "keep going until X" and another "stop when X", differences in how long
+# they run stop being attributable to the architecture. Taken verbatim from the
+# original ReAct prompt, which is the baseline every result is compared against.
+STOP_MANDATE = "When the tests pass and lint is clean, stop — do not call any more tools."
+
+REACT_SYSTEM = f"""\
 You are a software engineering agent. You will be given a coding task and a set \
 of tools to read and modify files in a sandboxed repository.
 
@@ -19,7 +28,7 @@ Work iteratively:
 2. Implement the required code.
 3. Run the tests to check your work.
 4. Fix any failures, then run lint and fix any errors.
-5. When the tests pass and lint is clean, stop — do not call any more tools.
+5. {STOP_MANDATE}
 
 Write correct, idiomatic Python. Do not add unnecessary comments or docstrings \
 beyond what helps readability.\
@@ -45,12 +54,13 @@ When you have seen enough, stop calling tools and briefly summarise what you \
 found.\
 """
 
-VERIFY_SYSTEM = """\
+VERIFY_SYSTEM = f"""\
 You are a software engineering agent, in the final verification phase.
 
 Run the tests. If anything fails, read the relevant file, fix it, and run the \
-tests again. Then run lint and fix any errors. Keep going until tests pass and \
-lint is clean, then stop calling tools.
+tests again. Then run lint and fix any errors.
+
+{STOP_MANDATE}
 
 Write correct, idiomatic Python.\
 """
@@ -159,13 +169,14 @@ When this section is implemented, stop calling tools.\
 # Reflexion
 # ------------------------------------------------------------------
 
-REFLEXION_SYSTEM = """\
+REFLEXION_SYSTEM = f"""\
 You are a software engineering agent. You will be given a coding task and a set \
 of tools to read and modify files in a sandboxed repository.
 
 Read the relevant files, implement the required code, and run the tests to \
-check your work. Fix what fails, then run lint and fix any errors. When tests \
-pass and lint is clean, stop calling tools.
+check your work. Fix what fails, then run lint and fix any errors.
+
+{STOP_MANDATE}
 
 Write correct, idiomatic Python.\
 """

@@ -31,6 +31,7 @@ from .base import (
     ask,
     files_written,
     ground_truth,
+    is_solved,
     read_current_state,
     run_tool_loop,
 )
@@ -80,7 +81,7 @@ def build(ctx: AgentContext) -> Callable[[Session], None]:
 
             # --- ground truth, run rather than reported ---
             last_tests, lint = ground_truth(session)
-            tests_pass = last_tests.total > 0 and last_tests.passed == last_tests.total
+            solved = is_solved(last_tests, lint)
 
             # --- critic, tool-free so it cannot edit what it reviews ---
             written = files_written(session)
@@ -97,19 +98,23 @@ def build(ctx: AgentContext) -> Callable[[Session], None]:
             session.log_note("critique", critique, verdict=verdict, round=round_no)
 
             if verdict == "APPROVE":
-                if tests_pass:
+                if solved:
                     return
-                # Approval of failing code is not evidence of anything.
+                # Approval of work that does not meet the stop condition is not
+                # evidence of anything. Same predicate every other architecture
+                # stops on, so the extra rounds are comparable.
                 session.log_note(
                     "approval_overridden",
                     f"Critic approved, but {last_tests.total - last_tests.passed} of "
-                    f"{last_tests.total} public tests fail. Continuing.",
+                    f"{last_tests.total} tests fail and lint has "
+                    f"{len(lint.errors)} error(s). Continuing.",
                     round=round_no,
                 )
                 critique = (
-                    "Your reviewer approved, but the tests still fail:\n"
+                    "Your reviewer approved, but the work is not finished yet:\n"
                     + fmt_test_result(last_tests)
-                    + "\nFix the failures."
+                    + "\n"
+                    + fmt_lint_result(lint)
                 )
 
     return _agent

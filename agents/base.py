@@ -237,6 +237,18 @@ def ground_truth(session: Session) -> tuple:
     return session.run_tests(), session.run_lint()
 
 
+def is_solved(tests, lint) -> bool:
+    """
+    The harness-side counterpart of prompts.STOP_MANDATE.
+
+    Every architecture that decides for itself when to stop must use this one
+    predicate. When reflexion required clean lint to finish and critic_actor
+    only required passing tests, the two ran for different lengths on identical
+    work — a difference in the measuring instrument, not in the architecture.
+    """
+    return tests.total > 0 and tests.passed == tests.total and not lint.errors
+
+
 def ask(conv: Conversation, messages: list) -> str:
     """
     A single tool-free LLM call returning plain text.

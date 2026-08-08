@@ -5,15 +5,15 @@ Write tests first, watch them fail, then implement until they pass — the
 inverse of the default flow, where tests are something the agent runs at the
 end to check work it already believes is correct.
 
-IMPORTANT — why the cleanup step exists. Tests the agent writes cannot affect
-its test scores: run_tests is scoped to tests/{suite}, so only the public and
-private suites are ever collected. Lint is not scoped. `run_lint` shells
-`ruff check .` at the repo root (environment/tools.py), and the grader runs it
-after the agent finishes, so every ruff violation in an agent-authored test
-file costs 5% of lint_score — a component this architecture would lose purely
-for having done its job. The scratch tests are therefore deleted before the
-episode ends. Without this, TDD scores worse than ReAct for a reason that has
-nothing to do with test-driven development, and the benchmark quietly lies.
+The cleanup step removes the scratch tests before the episode ends, so the
+graded deliverable is just the source the task asked for.
+
+This used to matter for scoring: lint ran `ruff check .` at the repo root, so
+every violation in an agent-authored test file cost 5% of lint_score — this
+architecture was penalised for doing its job. Lint now excludes tests/
+entirely (environment/tools.py), because that directory belongs to the harness.
+The cleanup is kept for tidiness rather than points; leaving scratch tests in
+code.zip alongside the solution invites them to be mistaken for graded suites.
 """
 
 from collections.abc import Callable
