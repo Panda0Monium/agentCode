@@ -61,7 +61,15 @@
     <div id="panel-signin">
       <form method="post" action="{% url 'account_login' %}">
         {% csrf_token %}
-        <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% comment %}
+          Only emit the redirect field when there actually is one. Rendered
+          unconditionally it writes a literal "None" whenever the login page is
+          reached without ?next=, and allauth then redirects to the path "None"
+          — landing the user on /accounts/login/None.
+        {% endcomment %}
+        {% if redirect_field_value %}
+          <input type="hidden" name="{{ redirect_field_name }}" value="{{ redirect_field_value }}" />
+        {% endif %}
 
         <div class="mb-4">
           <label for="id_login" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Email</label>

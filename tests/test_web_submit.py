@@ -95,3 +95,39 @@ def test_valid_budget_passes_through():
     from runs.views import _parse_token_budget
 
     assert _parse_token_budget(" 50000 ") == (50_000, None)
+
+
+# ------------------------------------------------------------------
+# Login template
+# ------------------------------------------------------------------
+
+def _render_login(**ctx):
+    from django.template.loader import render_to_string
+
+    base = {"redirect_field_name": "next", "redirect_field_value": None}
+    base.update(ctx)
+    return render_to_string("account/login.html", base)
+
+
+def test_login_form_omits_the_redirect_field_when_there_is_no_next():
+    """
+    Regression: the hidden redirect input was rendered unconditionally, so
+    reaching /accounts/login/ without ?next= produced value="None". allauth
+    then redirected to the literal path "None", which the browser resolved
+    against the login URL — dumping the user on /accounts/login/None (404).
+    """
+    html = _render_login()
+    assert 'value="None"' not in html
+    assert 'name="next"' not in html
+
+
+def test_login_form_keeps_a_real_next_value():
+    html = _render_login(redirect_field_value="/problems/3/")
+    assert 'name="next"' in html
+    assert 'value="/problems/3/"' in html
+
+
+def test_login_form_still_renders_both_oauth_buttons():
+    html = _render_login()
+    assert "Continue with GitHub" in html
+    assert "Continue with Hugging Face" in html
