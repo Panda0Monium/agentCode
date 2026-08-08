@@ -57,7 +57,9 @@ def test_agent_source_is_still_in_scope():
 # Image reproducibility
 # ------------------------------------------------------------------
 
-DOCKERFILES = sorted(DOCKER_DIR.glob("*.Dockerfile"))
+# The root Dockerfile builds agentcode-sandbox, the fallback for any task.yaml
+# without an explicit docker_image — it carries the same defect and the same fix.
+DOCKERFILES = sorted(DOCKER_DIR.glob("*.Dockerfile")) + [DOCKER_DIR.parent / "Dockerfile"]
 
 
 @pytest.mark.parametrize("path", DOCKERFILES, ids=lambda p: p.name)
